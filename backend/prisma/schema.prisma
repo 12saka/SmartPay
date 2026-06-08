@@ -1,0 +1,98 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   // OWNER, MANAGER, HR, ACCOUNTANT, EMPLOYEE
+  branchId  Int?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Branch {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  location  String?
+  employees Employee[]
+  users     User[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Employee {
+  id             Int             @id @default(autoincrement())
+  employeeNumber String          @unique
+  fullName       String
+  nationalId     String          @unique
+  phone          String
+  email          String
+  department     String
+  position       String
+  salary         Float           // Basic Salary
+  employmentDate String
+  paymentMethod  String          // MPESA, AIRTEL, BANK, WALLET
+  accountNumber  String          // Mobile number or Bank Account number
+  taxPin         String
+  status         String          @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED
+  branchId       Int?
+  branch         Branch?         @relation(fields: [branchId], references: [id])
+  advances       SalaryAdvance[]
+  payrollRuns    PayrollRun[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model SalaryAdvance {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int
+  employee        Employee @relation(fields: [employeeId], references: [id])
+  amount          Float
+  requestDate     String
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, PAID
+  repaymentPeriod Int      @default(1)         // Number of months to pay back
+  deductedAmount  Float    @default(0)         // How much has already been deducted from payrolls
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PayrollRun {
+  id               Int       @id @default(autoincrement())
+  month            String    // Format: YYYY-MM (e.g., 2026-06)
+  employeeId       Int
+  employee         Employee  @relation(fields: [employeeId], references: [id])
+  basicSalary      Float
+  overtimeHours    Float     @default(0)
+  overtimeRate     Float     @default(0) // Rate per hour
+  bonusAmount      Float     @default(0)
+  deductions       Float     @default(0) // General deductions (tax, pension, insurance, etc.)
+  advanceDeduction Float     @default(0) // Automatic salary advance deduction
+  penalties        Float     @default(0)
+  netSalary        Float
+  status           String    @default("DRAFT") // DRAFT, HR_APPROVED, FINANCE_APPROVED, PAID
+  paymentDate      String?
+  paymentReference String?
+  branchId         Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Transaction {
+  id            Int      @id @default(autoincrement())
+  payrollPeriod String   // Format: YYYY-MM
+  totalAmount   Float
+  paymentMethod String   // MPESA, AIRTEL, BANK, ALL
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  initiatorId   Int      // User ID who triggered the payment
+  timestamp     DateTime @default(now())
+  referenceCode String   @unique
+}
