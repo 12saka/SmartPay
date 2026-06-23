@@ -6,7 +6,7 @@ function getHeaders() {
     'Content-Type': 'application/json',
   };
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('smartpay_token');
+    const token = localStorage.getItem('accessToken');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -38,8 +38,8 @@ export const authService = {
       body: JSON.stringify(credentials),
     });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('smartpay_token', data.token);
-      localStorage.setItem('smartpay_user', JSON.stringify(data.user));
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   },
@@ -49,26 +49,26 @@ export const authService = {
       body: JSON.stringify(userData),
     });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('smartpay_token', data.token);
-      localStorage.setItem('smartpay_user', JSON.stringify(data.user));
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   },
   logout: () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('smartpay_token');
-      localStorage.removeItem('smartpay_user');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
     }
   },
   getCurrentUser: () => {
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('smartpay_user');
+      const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
           return JSON.parse(userStr);
         } catch (e) {
-          console.error('Failed to parse smartpay_user', e);
-          localStorage.removeItem('smartpay_user');
+          console.error('Failed to parse user', e);
+          localStorage.removeItem('user');
         }
       }
       return null;

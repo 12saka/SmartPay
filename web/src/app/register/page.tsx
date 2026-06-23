@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Building2, Users, CheckCircle2, ChevronRight, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/components/providers/AuthProvider';
 import styles from './Register.module.css';
 
 type RegisterFlow = 'CHOICE' | 'CREATE_COMPANY' | 'JOIN_COMPANY';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [flow, setFlow] = useState<RegisterFlow>('CHOICE');
   const [step, setStep] = useState(1);
   const totalSteps = 5;
@@ -23,6 +25,62 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const submitRegistration = async (isJoin: boolean) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const payload: any = {
+        email,
+        password,
+        name: fullName,
+        role: isJoin ? 'MANAGER' : 'OWNER'
+      };
+ 
+      if (!isJoin) {
+        payload.companyName = companyName;
+        payload.industry = industry;
+        payload.currency = 'KES';
+        payload.payrollFrequency = 'MONTHLY';
+        payload.paymentMethod = 'BANK';
+        payload.timezone = 'Africa/Nairobi';
+        payload.workingDays = 'Monday-Friday';
+      }
+ 
+      // Register the user & organization
+      const regResponse = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+ 
+      const regData = await regResponse.json();
+      if (!regResponse.ok) {
+        throw new Error(regData.error || 'Registration failed');
+      }
+ 
+      // Automatically log in the user
+      const logResponse = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+ 
+      const logData = await logResponse.json();
+      if (!logResponse.ok) {
+        throw new Error(logData.error || 'Failed to login after registration');
+      }
+ 
+      login(logData.accessToken, logData.user);
+      nextStep();
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const calculatePasswordStrength = (pass: string) => {
     let strength = 0;
@@ -224,8 +282,11 @@ export default function RegisterPage() {
               <Input label="Timezone" defaultValue="Africa/Nairobi" />
               <Input label="Working Days" defaultValue="Mon - Fri" />
             </div>
-            <div className={styles.buttonGroup}>
-              <Button onClick={nextStep} fullWidth>Finish Setup</Button>
+            <div className={styles.buttonGroup} style={{flexDirection: 'column', gap: '1rem', width: '100%'}}>
+              {error && <div className={styles.globalError} style={{color: 'var(--danger)', fontSize: '0.875rem'}}>{error}</div>}
+              <Button onClick={() => submitRegistration(false)} fullWidth disabled={isLoading}>
+                {isLoading ? 'Creating Company...' : 'Finish Setup'}
+              </Button>
             </div>
           </div>
         );
@@ -355,8 +416,11 @@ export default function RegisterPage() {
               <a href="#" className={styles.choiceDesc} style={{color: 'var(--primary)', textDecoration: 'underline'}}>Resend Code</a>
             </div>
 
-            <div className={styles.buttonGroup} style={{justifyContent: 'center'}}>
-              <Button onClick={nextStep} fullWidth disabled={otp.join('').length !== 6}>Verify</Button>
+            <div className={styles.buttonGroup} style={{justifyContent: 'center', flexDirection: 'column', gap: '1rem', width: '100%'}}>
+              {error && <div className={styles.globalError} style={{color: 'var(--danger)', fontSize: '0.875rem', textAlign: 'center'}}>{error}</div>}
+              <Button onClick={() => submitRegistration(true)} fullWidth disabled={otp.join('').length !== 6 || isLoading}>
+                {isLoading ? 'Joining Company...' : 'Verify'}
+              </Button>
             </div>
           </div>
         );

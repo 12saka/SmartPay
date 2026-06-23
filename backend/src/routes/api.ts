@@ -9,11 +9,15 @@ import { getAllNotifications, markNotificationAsRead, markAllNotificationsAsRead
 import { getAllAuditLogs, logSecurityEvent } from '../controllers/auditController';
 import { getWalletBalances, getWalletTransactions, fundWallet } from '../controllers/walletController';
 import { authenticateToken, requireRole } from '../middleware/auth';
+import { loginRateLimiter, apiRateLimiter } from '../middleware/rateLimit';
 
 const router = Router();
 
+// Apply general API rate limiter
+router.use(apiRateLimiter);
+
 // Auth routes
-router.post('/auth/login', login);
+router.post('/auth/login', loginRateLimiter, login);
 router.post('/auth/register', register);
 router.get('/auth/me', authenticateToken, getMe);
 

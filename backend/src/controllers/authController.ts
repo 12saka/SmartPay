@@ -1,10 +1,8 @@
 import { Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { hashPassword, verifyPassword } from '../utils/hash';
+import { generateTokens } from '../utils/jwt';
 import prisma from '../db';
 import { AuthenticatedRequest } from '../middleware/auth';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'smartpay_sme_secret_jwt_key_2026';
 
 export async function login(req: AuthenticatedRequest, res: Response) {
   try {
@@ -16,32 +14,68 @@ export async function login(req: AuthenticatedRequest, res: Response) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { branch: true }
+      include: { branch: true, organization: true }
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'No SmartPay account exists for this email.' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    if (user.status === 'LOCKED') {
+      if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+        return res.status(403).json({ error: 'Too many failed login attempts. Try again after 15 minutes.' });
+      } else {
+        // Unlock if time has passed
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { status: 'ACTIVE', failedLoginAttempts: 0, lockoutUntil: null }
+        });
+      }
+    } else if (user.status === 'PENDING_VERIFICATION') {
+      return res.status(403).json({ error: 'Your account has not yet been verified. Please check your email.' });
+    }
+
+    const isMatch = await verifyPassword(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      const newAttempts = user.failedLoginAttempts + 1;
+      if (newAttempts >= 5) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: newAttempts,
+            status: 'LOCKED',
+            lockoutUntil: new Date(Date.now() + 15 * 60 * 1000)
+          }
+        });
+        return res.status(401).json({ error: 'Too many failed login attempts. Account locked for 15 minutes.' });
+      } else {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { failedLoginAttempts: newAttempts }
+        });
+        return res.status(401).json({ error: 'Password is incorrect.' });
+      }
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name, role: user.role, branchId: user.branchId },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Reset attempts on successful login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lastLoginIp: req.ip }
+    });
+
+    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
 
     return res.json({
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-        branch: user.branch
+        status: user.status,
+        organizationId: user.organizationId,
+        branchId: user.branchId
       }
     });
   } catch (error: any) {
@@ -52,13 +86,13 @@ export async function login(req: AuthenticatedRequest, res: Response) {
 
 export async function register(req: AuthenticatedRequest, res: Response) {
   try {
-    const { email, password, name, role, branchId } = req.body;
+    const { email, password, name, role, organizationId, branchId } = req.body;
 
     if (!email || !password || !name || !role) {
       return res.status(400).json({ error: 'Email, password, name, and role are required' });
     }
 
-    const validRoles = ['OWNER', 'MANAGER', 'HR', 'ACCOUNTANT', 'EMPLOYEE'];
+    const validRoles = ['OWNER', 'MANAGER', 'HR', 'ACCOUNTANT', 'PAYROLL_OFFICER', 'EMPLOYEE'];
     if (!validRoles.includes(role.toUpperCase())) {
       return res.status(400).json({ error: 'Invalid user role selected' });
     }
@@ -71,7 +105,43 @@ export async function register(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ error: 'A user with this email address already exists' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hashPassword(password);
+
+    let finalOrgId = organizationId ? parseInt(organizationId) : null;
+    const companyName = req.body.companyName;
+
+    if (companyName) {
+      const org = await prisma.organization.create({
+        data: {
+          name: companyName,
+          industry: req.body.industry || null,
+          currency: req.body.currency || 'KES',
+          payrollFrequency: (req.body.payrollFrequency || 'MONTHLY').toUpperCase(),
+          paymentMethod: (req.body.paymentMethod || 'BANK').toUpperCase(),
+          timezone: req.body.timezone || 'Africa/Nairobi',
+          workingDays: req.body.workingDays || 'Monday-Friday',
+        }
+      });
+      finalOrgId = org.id;
+    }
+
+    if (!finalOrgId) {
+      let firstOrg = await prisma.organization.findFirst();
+      if (!firstOrg) {
+        firstOrg = await prisma.organization.create({
+          data: {
+            name: 'SmartPay SME',
+            industry: 'Technology',
+            currency: 'KES',
+            payrollFrequency: 'MONTHLY',
+            paymentMethod: 'BOTH',
+            timezone: 'Africa/Nairobi',
+            workingDays: 'Monday-Friday',
+          }
+        });
+      }
+      finalOrgId = firstOrg.id;
+    }
 
     const newUser = await prisma.user.create({
       data: {
@@ -79,25 +149,20 @@ export async function register(req: AuthenticatedRequest, res: Response) {
         password: hashedPassword,
         name,
         role: role.toUpperCase(),
-        branchId: branchId ? parseInt(branchId) : null
-      },
-      include: { branch: true }
+        organizationId: finalOrgId,
+        branchId: branchId ? parseInt(branchId) : null,
+        status: 'ACTIVE' // Default to ACTIVE so users can log in immediately
+      }
     });
 
-    const token = jwt.sign(
-      { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role, branchId: newUser.branchId },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
     return res.status(201).json({
-      token,
+      message: 'Account created successfully.',
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
-        branch: newUser.branch
+        status: newUser.status
       }
     });
   } catch (error: any) {
@@ -119,6 +184,8 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
         email: true,
         name: true,
         role: true,
+        status: true,
+        organization: true,
         branch: true
       }
     });

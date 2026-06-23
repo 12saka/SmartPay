@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Wallet, Briefcase, BarChart3 } from 'lucide-react';
+import { useAuth } from '@/components/providers/AuthProvider';
 import styles from './Login.module.css';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,9 +27,7 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // We assume the backend is running on port 3000 or similar.
-      // In production, an environment variable would be used.
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -39,9 +39,8 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to login');
       }
 
-      // Store tokens and user details securely (localStorage for now, HTTP-only cookies preferred for prod)
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Store in auth provider state and local storage
+      login(data.accessToken, data.user);
 
       // Route based on role
       router.push('/dashboard');
