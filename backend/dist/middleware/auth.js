@@ -20,6 +20,7 @@ function authenticateToken(req, res, next) {
         req.user = {
             id: decoded.id,
             email: decoded.email,
+            name: decoded.name,
             role: decoded.role,
             branchId: decoded.branchId
         };

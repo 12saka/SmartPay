@@ -2,17 +2,19 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   Users, 
-  Calculator, 
-  Wallet, 
-  Receipt, 
-  CalendarClock, 
-  TrendingUp, 
-  Bell, 
-  Settings, 
+  FileSpreadsheet, 
+  CreditCard, 
+  CheckSquare, 
   GitBranch, 
-  ShieldAlert, 
-  ChevronDown,
-  HandCoins
+  CalendarClock, 
+  HandCoins, 
+  Wallet, 
+  BarChart3, 
+  FileCheck, 
+  Bell, 
+  Activity, 
+  Settings, 
+  ChevronDown
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -36,16 +38,18 @@ export default function Sidebar({
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'employees', label: 'Employees', icon: Users },
-    { id: 'payroll', label: 'Payroll', icon: Calculator },
-    { id: 'payments', label: 'Payments', icon: Wallet },
-    { id: 'payslips', label: 'Payslips', icon: Receipt },
-    { id: 'attendance', label: 'Attendance', icon: CalendarClock },
-    { id: 'advances', label: 'Advances', icon: HandCoins },
-    { id: 'reports', label: 'Reports', icon: TrendingUp },
-    { id: 'notifications', label: 'Notifications', icon: Bell, badge: 5 },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'payroll-processing', label: 'Payroll Processing', icon: FileSpreadsheet },
+    { id: 'bulk-payments', label: 'Bulk Payments', icon: CreditCard },
+    { id: 'approvals', label: 'Approvals', icon: CheckSquare },
     { id: 'branches', label: 'Branches', icon: GitBranch },
-    { id: 'roles', label: 'Roles & Permissions', icon: ShieldAlert },
+    { id: 'attendance', label: 'Attendance', icon: CalendarClock },
+    { id: 'advances', label: 'Salary Advances', icon: HandCoins },
+    { id: 'wallet', label: 'Wallet & Finance', icon: Wallet },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'compliance', label: 'Compliance', icon: FileCheck },
+    { id: 'notifications', label: 'Notifications', icon: Bell, badge: 3 },
+    { id: 'audit-logs', label: 'Audit Logs', icon: Activity },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (

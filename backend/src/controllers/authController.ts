@@ -29,7 +29,7 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, branchId: user.branchId },
+      { id: user.id, email: user.email, name: user.name, role: user.role, branchId: user.branchId },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -85,7 +85,7 @@ export async function register(req: AuthenticatedRequest, res: Response) {
     });
 
     const token = jwt.sign(
-      { id: newUser.id, email: newUser.email, role: newUser.role, branchId: newUser.branchId },
+      { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role, branchId: newUser.branchId },
       JWT_SECRET,
       { expiresIn: '7d' }
     );

@@ -5,6 +5,9 @@ import { requestAdvance, getAllAdvances, approveAdvance } from '../controllers/a
 import { generatePayrollDraft, getAllPayrollRuns, updatePayrollRun, updatePayrollPeriodStatus, executeBulkPayments } from '../controllers/payrollController';
 import { getAllBranches, createBranch } from '../controllers/branchController';
 import { getDashboardStats, getPayrollTrends, getDepartmentSummary } from '../controllers/reportController';
+import { getAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../controllers/notificationController';
+import { getAllAuditLogs, logSecurityEvent } from '../controllers/auditController';
+import { getWalletBalances, getWalletTransactions, fundWallet } from '../controllers/walletController';
 import { authenticateToken, requireRole } from '../middleware/auth';
 
 const router = Router();
@@ -41,5 +44,19 @@ router.post('/branches', authenticateToken, requireRole(['OWNER']), createBranch
 router.get('/reports/stats', authenticateToken, getDashboardStats);
 router.get('/reports/trends', authenticateToken, getPayrollTrends);
 router.get('/reports/departments', authenticateToken, getDepartmentSummary);
+
+// Notification routes
+router.get('/notifications', authenticateToken, getAllNotifications);
+router.put('/notifications/:id/read', authenticateToken, markNotificationAsRead);
+router.put('/notifications/read-all', authenticateToken, markAllNotificationsAsRead);
+
+// Wallet routes
+router.get('/wallet/balances', authenticateToken, getWalletBalances);
+router.get('/wallet/transactions', authenticateToken, getWalletTransactions);
+router.post('/wallet/fund', authenticateToken, requireRole(['OWNER', 'ACCOUNTANT']), fundWallet);
+
+// Audit routes
+router.get('/audits', authenticateToken, requireRole(['OWNER', 'MANAGER']), getAllAuditLogs);
+router.post('/audits', authenticateToken, logSecurityEvent);
 
 export default router;

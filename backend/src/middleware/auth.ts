@@ -7,6 +7,7 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: number;
     email: string;
+    name: string;
     role: string;
     branchId: number | null;
   };
@@ -27,6 +28,7 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
     req.user = {
       id: decoded.id,
       email: decoded.email,
+      name: decoded.name,
       role: decoded.role,
       branchId: decoded.branchId
     };

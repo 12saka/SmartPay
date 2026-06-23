@@ -13,7 +13,14 @@ import PayslipsView from '../components/PayslipsView';
 import AttendanceView from '../components/AttendanceView';
 import AdvancesView from '../components/AdvancesView';
 import BranchesView from '../components/BranchesView';
-import PlaceholderView from '../components/PlaceholderView';
+import WalletView from '../components/WalletView';
+import ReportsView from '../components/ReportsView';
+import ComplianceView from '../components/ComplianceView';
+import NotificationsView from '../components/NotificationsView';
+import AuditLogsView from '../components/AuditLogsView';
+import SettingsView from '../components/SettingsView';
+import ProfileView from '../components/ProfileView';
+import AiPanel from '../components/AiPanel';
 
 export default function HomePage() {
   const [user, setUser] = useState<any | null>(null);
@@ -70,26 +77,32 @@ export default function HomePage() {
         return <DashboardView setCurrentTab={setCurrentTab} selectedBranchId={selectedBranchId} />;
       case 'employees':
         return <EmployeesView selectedBranchId={selectedBranchId} />;
-      case 'payroll':
+      case 'payroll-processing':
         return <PayrollView selectedBranchId={selectedBranchId} currentUser={user} />;
-      case 'payments':
+      case 'bulk-payments':
         return <PaymentsView selectedBranchId={selectedBranchId} />;
-      case 'payslips':
-        return <PayslipsView selectedBranchId={selectedBranchId} />;
+      case 'approvals':
+        return <AdvancesView selectedBranchId={selectedBranchId} />;
+      case 'branches':
+        return <BranchesView />;
       case 'attendance':
         return <AttendanceView />;
       case 'advances':
         return <AdvancesView selectedBranchId={selectedBranchId} />;
-      case 'branches':
-        return <BranchesView />;
+      case 'wallet':
+        return <WalletView />;
       case 'reports':
-        return <PlaceholderView title="Analytical Reports" />;
+        return <ReportsView />;
+      case 'compliance':
+        return <ComplianceView />;
       case 'notifications':
-        return <PlaceholderView title="Notifications Center" />;
+        return <NotificationsView />;
+      case 'audit-logs':
+        return <AuditLogsView />;
       case 'settings':
-        return <PlaceholderView title="Company Settings" />;
-      case 'roles':
-        return <PlaceholderView title="Roles & Permissions" />;
+        return <SettingsView />;
+      case 'profile':
+        return <ProfileView />;
       default:
         return <DashboardView setCurrentTab={setCurrentTab} selectedBranchId={selectedBranchId} />;
     }
@@ -109,9 +122,12 @@ export default function HomePage() {
 
       {/* Main Dashboard Space */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar onLogout={handleLogout} user={user} />
+        <Topbar onLogout={handleLogout} user={user} setCurrentTab={setCurrentTab} />
         {renderContent()}
       </div>
+
+      {/* Floating AI Assistant Drawer */}
+      <AiPanel />
     </div>
   );
 }

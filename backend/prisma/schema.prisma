@@ -8,15 +8,18 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   // OWNER, MANAGER, HR, ACCOUNTANT, EMPLOYEE
-  branchId  Int?
-  branch    Branch?  @relation(fields: [branchId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  password          String
+  name              String
+  role              String   // OWNER, MANAGER, HR, ACCOUNTANT, EMPLOYEE
+  branchId          Int?
+  branch            Branch?  @relation(fields: [branchId], references: [id])
+  twoFactorEnabled  Boolean  @default(false)
+  lastLoginIp       String?
+  lastLoginDevice   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Branch {
@@ -30,26 +33,85 @@ model Branch {
 }
 
 model Employee {
-  id             Int             @id @default(autoincrement())
-  employeeNumber String          @unique
-  fullName       String
-  nationalId     String          @unique
-  phone          String
-  email          String
-  department     String
-  position       String
-  salary         Float           // Basic Salary
-  employmentDate String
-  paymentMethod  String          // MPESA, AIRTEL, BANK, WALLET
-  accountNumber  String          // Mobile number or Bank Account number
-  taxPin         String
-  status         String          @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED
-  branchId       Int?
-  branch         Branch?         @relation(fields: [branchId], references: [id])
-  advances       SalaryAdvance[]
-  payrollRuns    PayrollRun[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                Int                 @id @default(autoincrement())
+  employeeNumber    String              @unique
+  fullName          String
+  nationalId        String              @unique
+  phone             String
+  email             String
+  department        String
+  position          String
+  salary            Float               // Basic Salary
+  employmentDate    String
+  paymentMethod     String              // MPESA, AIRTEL, BANK, WALLET
+  accountNumber     String              // Mobile number or Bank Account number
+  taxPin            String
+  status            String              @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED
+  branchId          Int?
+  branch            Branch?             @relation(fields: [branchId], references: [id])
+  passportPhoto     String?
+  nssfNumber        String?
+  nhifNumber        String?
+  housingLevy       Boolean             @default(true)
+  employmentType    String              @default("FULL_TIME") // FULL_TIME, CONTRACT, CASUAL
+  bankAccount       String?
+  mpesaNumber       String?
+  emergencyContacts String?
+  documents         Document[]
+  leaveRecords      LeaveRecord[]
+  attendanceRecords AttendanceRecord[]
+  performanceReviews PerformanceReview[]
+  advances          SalaryAdvance[]
+  payrollRuns       PayrollRun[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model Document {
+  id         Int      @id @default(autoincrement())
+  name       String
+  url        String
+  category   String   // CONTRACT, ID, TAX, OTHER
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model LeaveRecord {
+  id         Int      @id @default(autoincrement())
+  type       String   // ANNUAL, SICK, MATERNITY, PATERNITY, UNPAID
+  startDate  String
+  endDate    String
+  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AttendanceRecord {
+  id         Int      @id @default(autoincrement())
+  date       String   // YYYY-MM-DD
+  checkIn    String?  // HH:MM
+  checkOut   String?  // HH:MM
+  status     String   @default("PRESENT") // PRESENT, ABSENT, LATE, HALFDAY
+  overtime   Float    @default(0) // Hours
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model PerformanceReview {
+  id          Int      @id @default(autoincrement())
+  reviewDate  String   // YYYY-MM-DD
+  rating      Int      // 1 to 5
+  notes       String?
+  employeeId  Int
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model SalaryAdvance {
@@ -95,4 +157,47 @@ model Transaction {
   initiatorId   Int      // User ID who triggered the payment
   timestamp     DateTime @default(now())
   referenceCode String   @unique
+}
+
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  userId        Int?
+  userName      String?
+  action        String
+  details       String?
+  ipAddress     String?
+  deviceDetails String?
+  timestamp     DateTime @default(now())
+}
+
+model Wallet {
+  id           Int                 @id @default(autoincrement())
+  type         String              // MPESA, BANK
+  balance      Float               @default(0)
+  floatBalance Float               @default(0)
+  currency     String              @default("KES")
+  transactions WalletTransaction[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model WalletTransaction {
+  id        Int      @id @default(autoincrement())
+  walletId  Int
+  wallet    Wallet   @relation(fields: [walletId], references: [id])
+  amount    Float
+  type      String   // DEPOSIT, WITHDRAWAL, PAYOUT
+  reference String
+  status    String   @default("COMPLETED") // COMPLETED, PENDING, FAILED
+  timestamp DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     // Target user or null for all users
+  title     String
+  message   String
+  category  String   // PAYROLL, EMPLOYEE, FINANCE, COMPLIANCE, SYSTEM
+  status    String   @default("UNREAD") // UNREAD, READ
+  createdAt DateTime @default(now())
 }

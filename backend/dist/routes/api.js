@@ -7,10 +7,14 @@ const advanceController_1 = require("../controllers/advanceController");
 const payrollController_1 = require("../controllers/payrollController");
 const branchController_1 = require("../controllers/branchController");
 const reportController_1 = require("../controllers/reportController");
+const notificationController_1 = require("../controllers/notificationController");
+const auditController_1 = require("../controllers/auditController");
+const walletController_1 = require("../controllers/walletController");
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 // Auth routes
 router.post('/auth/login', authController_1.login);
+router.post('/auth/register', authController_1.register);
 router.get('/auth/me', auth_1.authenticateToken, authController_1.getMe);
 // Employee routes
 router.get('/employees', auth_1.authenticateToken, employeeController_1.getAllEmployees);
@@ -35,4 +39,15 @@ router.post('/branches', auth_1.authenticateToken, (0, auth_1.requireRole)(['OWN
 router.get('/reports/stats', auth_1.authenticateToken, reportController_1.getDashboardStats);
 router.get('/reports/trends', auth_1.authenticateToken, reportController_1.getPayrollTrends);
 router.get('/reports/departments', auth_1.authenticateToken, reportController_1.getDepartmentSummary);
+// Notification routes
+router.get('/notifications', auth_1.authenticateToken, notificationController_1.getAllNotifications);
+router.put('/notifications/:id/read', auth_1.authenticateToken, notificationController_1.markNotificationAsRead);
+router.put('/notifications/read-all', auth_1.authenticateToken, notificationController_1.markAllNotificationsAsRead);
+// Wallet routes
+router.get('/wallet/balances', auth_1.authenticateToken, walletController_1.getWalletBalances);
+router.get('/wallet/transactions', auth_1.authenticateToken, walletController_1.getWalletTransactions);
+router.post('/wallet/fund', auth_1.authenticateToken, (0, auth_1.requireRole)(['OWNER', 'ACCOUNTANT']), walletController_1.fundWallet);
+// Audit routes
+router.get('/audits', auth_1.authenticateToken, (0, auth_1.requireRole)(['OWNER', 'MANAGER']), auditController_1.getAllAuditLogs);
+router.post('/audits', auth_1.authenticateToken, auditController_1.logSecurityEvent);
 exports.default = router;

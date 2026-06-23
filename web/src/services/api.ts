@@ -188,3 +188,44 @@ export const reportService = {
     return request<any>(`/reports/departments?${query.toString()}`);
   }
 };
+
+export const walletService = {
+  getBalances: async () => {
+    return request<any[]>('/wallet/balances');
+  },
+  getTransactions: async () => {
+    return request<any[]>('/wallet/transactions');
+  },
+  fundWallet: async (data: { walletType: string; amount: number; reference: string }) => {
+    return request<any>('/wallet/fund', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+};
+
+export const auditService = {
+  getAll: async (params: { search?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    return request<any[]>(`/audits?${query.toString()}`);
+  }
+};
+
+export const notificationService = {
+  getAll: async (params: { category?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (params.category) query.append('category', params.category);
+    return request<any[]>(`/notifications?${query.toString()}`);
+  },
+  markRead: async (id: number) => {
+    return request<any>(`/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  },
+  markAllRead: async () => {
+    return request<any>('/notifications/read-all', {
+      method: 'PUT',
+    });
+  }
+};
