@@ -1,0 +1,206 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.leftSide {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .leftSide {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 50%;
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+    padding: 3rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+}
+
+.illustrationTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-align: center;
+  z-index: 10;
+}
+
+.illustrationText {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  text-align: center;
+  max-width: 80%;
+  z-index: 10;
+}
+
+.floatingCard {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  animation: float 6s ease-in-out infinite;
+}
+
+.card1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.card2 {
+  bottom: 25%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+.card3 {
+  top: 45%;
+  right: 15%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.rightSide {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 2rem;
+  background-color: var(--background);
+}
+
+@media (min-width: 1024px) {
+  .rightSide {
+    width: 50%;
+  }
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 400px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.forgotPassword {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.forgotPassword:hover {
+  text-decoration: underline;
+}
+
+.socialButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.socialBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.socialBtn:hover {
+  background-color: var(--surface-hover);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
+
+.divider:not(:empty)::before {
+  margin-right: 1rem;
+}
+
+.divider:not(:empty)::after {
+  margin-left: 1rem;
+}
+
+.globalError {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.createAccountContainer {
+  margin-top: 1.5rem;
+  text-align: center;
+}

@@ -11,6 +11,8 @@ import {
   FileCheck2
 } from 'lucide-react';
 import { payrollService } from '../services/api';
+import { useToast } from './ui/ToastProvider';
+import { useCelebration } from './providers/CelebrationProvider';
 
 interface PayrollViewProps {
   selectedBranchId: number | null;
@@ -18,6 +20,8 @@ interface PayrollViewProps {
 }
 
 export default function PayrollView({ selectedBranchId, currentUser }: PayrollViewProps) {
+  const { success, error: toastError, info } = useToast();
+  const { celebrate } = useCelebration();
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
   const [month, setMonth] = useState('2026-06');
   const [loading, setLoading] = useState(true);
@@ -60,8 +64,11 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
       setErrorMsg('');
       await payrollService.generateDraft(month, selectedBranchId || undefined);
       loadPayroll();
+      success('Draft Generated', `Payroll draft for ${month} is ready for review.`);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Generation failed');
+      const msg = err.message || 'Generation failed';
+      setErrorMsg(msg);
+      toastError('Generation Failed', msg);
     } finally {
       setGenerating(false);
     }
@@ -88,8 +95,11 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
       await payrollService.updateRun(id, editFormData);
       setEditingRunId(null);
       loadPayroll();
+      info('Changes Saved', 'Payroll run has been updated.');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to save modifications');
+      const msg = err.message || 'Failed to save modifications';
+      setErrorMsg(msg);
+      toastError('Save Failed', msg);
     }
   };
 
@@ -98,8 +108,20 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
       setErrorMsg('');
       await payrollService.updatePeriodStatus(month, action, selectedBranchId || undefined);
       loadPayroll();
+      if (action === 'COMPANY_APPROVE') {
+        celebrate(3500);
+        success('🎉 Payroll Approved!', `${month} payroll has been fully approved and is ready for payment.`);
+      } else if (action === 'HR_APPROVE') {
+        success('HR Approved', `HR has signed off on the ${month} payroll.`);
+      } else if (action === 'FINANCE_APPROVE') {
+        success('Finance Approved', `Finance has reviewed and approved the ${month} payroll.`);
+      } else if (action === 'RESET') {
+        info('Payroll Reset', `${month} payroll has been reset to draft.`);
+      }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Approval action failed');
+      const msg = err.message || 'Approval action failed';
+      setErrorMsg(msg);
+      toastError('Approval Failed', msg);
     }
   };
 
@@ -178,8 +200,8 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
               <span className="text-xs text-slate-400 block font-semibold">Workflow Status</span>
               <span className="text-sm font-bold text-slate-800 block mt-0.5">
                 {status === 'PAID' && '🎉 Salaries Disbursed & Paid'}
-                {status === 'APPROVED' && '✅ Approved by Owner - Ready for Payout'}
-                {status === 'FINANCE_APPROVED' && '💼 Finance Approved - Pending Owner Sign-off'}
+                {status === 'APPROVED' && '✅ Approved by Manager - Ready for Payout'}
+                {status === 'FINANCE_APPROVED' && '💼 Finance Approved - Pending Manager Sign-off'}
                 {status === 'HR_APPROVED' && '📝 HR Approved - Pending Finance Review'}
                 {status === 'DRAFT' && '✏️ Draft Reviewing - Pending HR Approval'}
               </span>
@@ -209,7 +231,7 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
                 onClick={() => handleApprovalAction('COMPANY_APPROVE')}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors shadow-sm"
               >
-                Give Owner Approval
+                Give Manager Approval
               </button>
             )}
             {status !== 'PAID' && (

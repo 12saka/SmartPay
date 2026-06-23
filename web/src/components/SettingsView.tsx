@@ -134,29 +134,29 @@ export default function SettingsView() {
                     <thead className="bg-slate-50 text-[10px] font-extrabold uppercase text-slate-400 border-b border-slate-100">
                       <tr>
                         <th className="p-3">Feature Area</th>
-                        <th className="p-3 text-center">Owner</th>
                         <th className="p-3 text-center">Manager</th>
                         <th className="p-3 text-center">Accountant</th>
+                        <th className="p-3 text-center">Employee</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700 font-semibold">
                       <tr>
                         <td className="p-3">Create / Edit Employees</td>
                         <td className="p-3 text-center text-emerald-600 font-bold">✔ Allowed</td>
-                        <td className="p-3 text-center text-emerald-600 font-bold">✔ Allowed</td>
+                        <td className="p-3 text-center text-slate-400">Locked</td>
                         <td className="p-3 text-center text-slate-400">Locked</td>
                       </tr>
                       <tr>
                         <td className="p-3">Approve Payroll Roster</td>
                         <td className="p-3 text-center text-emerald-600 font-bold">✔ Allowed</td>
-                        <td className="p-3 text-center text-emerald-600 font-bold">✔ Allowed</td>
+                        <td className="p-3 text-center text-slate-400">Locked</td>
                         <td className="p-3 text-center text-slate-400">Locked</td>
                       </tr>
                       <tr>
                         <td className="p-3">Execute Bulk M-Pesa Payout</td>
                         <td className="p-3 text-center text-emerald-600 font-bold">✔ Allowed</td>
-                        <td className="p-3 text-center text-slate-400">Locked</td>
                         <td className="p-3 text-center text-emerald-600 font-bold">✔ Allowed</td>
+                        <td className="p-3 text-center text-slate-400">Locked</td>
                       </tr>
                     </tbody>
                   </table>

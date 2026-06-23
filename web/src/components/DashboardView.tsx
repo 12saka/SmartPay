@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { reportService } from '../services/api';
+import { Skeleton } from './ui/Skeleton';
 
 // Static fallback data for the line chart (matching the mockup exactly)
 const mockTrendsData = [
@@ -120,13 +121,13 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
       {/* Metric Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Total Employees */}
-        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 interactive-card">
+        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 glass-card-hover animate-slide-up stagger-1">
           <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
             <Users className="w-5 h-5" />
           </div>
-          <div>
+          <div className="flex-1">
             <span className="text-xs text-slate-400 block font-bold">Total Employees</span>
-            <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.totalEmployees}</span>
+            {loading ? <Skeleton className="h-6 w-16 mt-1" /> : <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.totalEmployees}</span>}
             <span className="text-[10px] text-slate-400 block mt-1 font-semibold">
               Active Employees <span className="text-emerald-600 font-bold">↑ 12 this month</span>
             </span>
@@ -134,15 +135,17 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
         </div>
 
         {/* Total Payroll */}
-        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 interactive-card">
+        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 glass-card-hover animate-slide-up stagger-1">
           <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
             <DollarSign className="w-5 h-5" />
           </div>
-          <div>
+          <div className="flex-1">
             <span className="text-xs text-slate-400 block font-bold">Total Payroll (May)</span>
-            <span className="text-xl font-bold text-slate-800 leading-none mt-1 block">
-              KES {stats.totalPayrollAmount.toLocaleString()}
-            </span>
+            {loading ? <Skeleton className="h-6 w-24 mt-1" /> : (
+              <span className="text-xl font-bold text-slate-800 leading-none mt-1 block">
+                KES {stats.totalPayrollAmount.toLocaleString()}
+              </span>
+            )}
             <span className="text-[10px] text-slate-400 block mt-1 font-semibold">
               Total salary cost <span className="text-emerald-600 font-bold">↑ 8.5% from last month</span>
             </span>
@@ -150,13 +153,13 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
         </div>
 
         {/* Paid Employees */}
-        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 interactive-card">
+        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 glass-card-hover animate-slide-up stagger-2">
           <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
             <CheckCircle className="w-5 h-5" />
           </div>
-          <div>
+          <div className="flex-1">
             <span className="text-xs text-slate-400 block font-bold">Paid Employees</span>
-            <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.paidEmployees}</span>
+            {loading ? <Skeleton className="h-6 w-16 mt-1" /> : <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.paidEmployees}</span>}
             <span className="text-[10px] text-slate-400 block mt-1 font-semibold">
               Employees paid <span className="text-emerald-600 font-bold">76.9% of total</span>
             </span>
@@ -164,27 +167,29 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
         </div>
 
         {/* Pending Payments */}
-        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 interactive-card">
+        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 glass-card-hover animate-slide-up stagger-2">
           <div className="p-3 bg-amber-100 text-amber-600 rounded-xl">
             <Clock className="w-5 h-5" />
           </div>
-          <div>
+          <div className="flex-1">
             <span className="text-xs text-slate-400 block font-bold">Pending Payments</span>
-            <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.pendingEmployees}</span>
-            <span className="text-[10px] text-slate-500 font-bold block mt-1">
-              KES {stats.pendingAmount.toLocaleString()}
-            </span>
+            {loading ? <Skeleton className="h-6 w-16 mt-1" /> : <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.pendingEmployees}</span>}
+            {loading ? <Skeleton className="h-3 w-20 mt-1" /> : (
+              <span className="text-[10px] text-slate-500 font-bold block mt-1">
+                KES {stats.pendingAmount.toLocaleString()}
+              </span>
+            )}
           </div>
         </div>
 
         {/* Total Branches */}
-        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 interactive-card">
+        <div className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex items-center space-x-4 glass-card-hover animate-slide-up stagger-3">
           <div className="p-3 bg-pink-100 text-pink-600 rounded-xl">
             <GitBranch className="w-5 h-5" />
           </div>
-          <div>
+          <div className="flex-1">
             <span className="text-xs text-slate-400 block font-bold">Total Branches</span>
-            <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.totalBranches}</span>
+            {loading ? <Skeleton className="h-6 w-12 mt-1" /> : <span className="text-2xl font-bold text-slate-800 leading-none mt-1 block">{stats.totalBranches}</span>}
             <span className="text-[10px] text-emerald-600 font-bold block mt-1 uppercase tracking-wider">Active</span>
           </div>
         </div>
@@ -193,32 +198,34 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
       {/* Middle Grid: Line Chart & Recent Payments */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Line Chart */}
-        <div className="lg:col-span-2 bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col interactive-card">
+        <div className="lg:col-span-2 bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col glass-card-hover animate-slide-up stagger-2">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-bold text-slate-800">Payroll Overview</h2>
-            <select className="text-xs border border-slate-200 bg-white rounded px-2.5 py-1.5 outline-none font-bold text-slate-500 cursor-pointer">
+            <select className="text-xs border border-slate-200 bg-white rounded px-2.5 py-1.5 outline-none font-bold text-slate-500 cursor-pointer focus:ring-1 focus:ring-emerald-500">
               <option>6 Months</option>
               <option>1 Year</option>
             </select>
           </div>
           <div className="h-64 flex-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trends} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" tickLine={false} stroke="#94a3b8" style={{ fontSize: 12, fontWeight: 600 }} />
-                <YAxis yAxisId="left" tickLine={false} axisLine={false} stroke="#94a3b8" style={{ fontSize: 12, fontWeight: 600 }} />
-                <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} stroke="#94a3b8" style={{ fontSize: 12, fontWeight: 600 }} />
-                <Tooltip />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 10, fontWeight: 600 }} />
-                <Line yAxisId="left" type="monotone" dataKey="payrollAmount" name="Payroll Amount (KES)" stroke="#0fa361" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4 }} />
-                <Line yAxisId="right" type="monotone" dataKey="employeeCount" name="Employees" stroke="#2563eb" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {loading ? <Skeleton className="w-full h-full" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trends} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" tickLine={false} stroke="#94a3b8" style={{ fontSize: 12, fontWeight: 600 }} />
+                  <YAxis yAxisId="left" tickLine={false} axisLine={false} stroke="#94a3b8" style={{ fontSize: 12, fontWeight: 600 }} />
+                  <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} stroke="#94a3b8" style={{ fontSize: 12, fontWeight: 600 }} />
+                  <Tooltip />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 10, fontWeight: 600 }} />
+                  <Line yAxisId="left" type="monotone" dataKey="payrollAmount" name="Payroll Amount (KES)" stroke="#0fa361" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="employeeCount" name="Employees" stroke="#2563eb" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
         {/* Recent Payments List */}
-        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col interactive-card">
+        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col glass-card-hover animate-slide-up stagger-3">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-bold text-slate-800">Recent Payments</h2>
             <button 
@@ -303,10 +310,10 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
       {/* Bottom Grid: Department Summary, Quick Actions, Upcoming Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Department Summary Donut Chart */}
-        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col interactive-card">
+        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col glass-card-hover animate-slide-up stagger-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-slate-800">Department Summary</h2>
-            <button className="text-xs font-bold text-[var(--brand-green)] hover:text-[#0c8a50]">View Report</button>
+            <button className="text-xs font-bold text-[var(--brand-green)] hover:text-[#0c8a50] transition-colors">View Report</button>
           </div>
           
           <div className="flex flex-row items-center justify-between flex-1">
@@ -354,7 +361,7 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col interactive-card">
+        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col glass-card-hover animate-slide-up stagger-3">
           <h2 className="text-base font-bold text-slate-800 mb-6">Quick Actions</h2>
           <div className="grid grid-cols-3 gap-4 flex-1">
             {/* Add Employee */}
@@ -438,10 +445,10 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
         </div>
 
         {/* Upcoming Tasks Card */}
-        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col interactive-card">
+        <div className="bg-white p-6 border border-slate-200/80 rounded-xl shadow-card flex flex-col glass-card-hover animate-slide-up stagger-3">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-bold text-slate-800">Upcoming Tasks</h2>
-            <button className="text-xs font-bold text-[var(--brand-green)] hover:text-[#0c8a50]">View All</button>
+            <button className="text-xs font-bold text-[var(--brand-green)] hover:text-[#0c8a50] transition-colors">View All</button>
           </div>
           <div className="flex-1 space-y-4">
             {/* Task 1 */}

@@ -1,0 +1,51 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--text-primary);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.input:focus {
+  border-color: #10B981; /* Primary Brand Green */
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  background-color: var(--surface);
+}
+
+.input.error {
+  border-color: var(--danger);
+}
+
+.input.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.errorMessage {
+  font-size: 0.75rem;
+  color: var(--danger);
+  margin-top: 0.25rem;
+}

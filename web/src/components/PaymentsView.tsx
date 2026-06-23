@@ -10,12 +10,16 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { payrollService } from '../services/api';
+import { useToast } from './ui/ToastProvider';
+import { useCelebration } from './providers/CelebrationProvider';
 
 interface PaymentsViewProps {
   selectedBranchId: number | null;
 }
 
 export default function PaymentsView({ selectedBranchId }: PaymentsViewProps) {
+  const { success, error: toastError } = useToast();
+  const { celebrate } = useCelebration();
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
   const [month, setMonth] = useState('2026-06');
   const [loading, setLoading] = useState(true);
@@ -98,7 +102,10 @@ export default function PaymentsView({ selectedBranchId }: PaymentsViewProps) {
         setPaymentResult(res);
         setProcessing(false);
         loadPayroll();
-      } catch (err) {
+        celebrate(4000);
+        success('🎉 Payments Disbursed!', `All ${month} salaries have been successfully paid via ${paymentMethod}.`);
+      } catch (err: any) {
+        toastError('Payment Failed', err.message || 'Could not finalize payments. Please retry.');
         console.error('Failed to finalize payments:', err);
         setProcessing(false);
       }
@@ -136,7 +143,7 @@ export default function PaymentsView({ selectedBranchId }: PaymentsViewProps) {
                 <AlertCircle className="w-8 h-8 text-slate-300" />
                 <span className="text-sm font-semibold">No approved payroll runs found for this period.</span>
                 <span className="text-xs text-slate-400 max-w-xs">
-                  Ensure the payroll calculations are fully approved by HR, Finance, and the Owner before payment.
+                  Ensure the payroll calculations are fully approved by HR, Finance, and the Manager before payment.
                 </span>
               </div>
             ) : (

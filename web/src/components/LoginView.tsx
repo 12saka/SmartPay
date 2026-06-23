@@ -168,9 +168,9 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
                   onChange={(e) => setRole(e.target.value)}
                   className="w-full text-sm border border-slate-800 rounded-lg p-2 bg-slate-950 text-white outline-none focus:border-emerald-500 transition-colors"
                 >
-                  <option value="OWNER">Owner</option>
                   <option value="MANAGER">Manager</option>
                   <option value="ACCOUNTANT">Accountant</option>
+                  <option value="EMPLOYEE">Employee</option>
                 </select>
               </div>
 
@@ -229,8 +229,8 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
               <span className="font-bold text-slate-300 font-mono">manager@smartpay.com / password123</span>
             </div>
             <div className="flex justify-between">
-              <span>Demo Owner login:</span>
-              <span className="font-bold text-slate-300 font-mono">owner@smartpay.com / password123</span>
+              <span>Demo Accountant login:</span>
+              <span className="font-bold text-slate-300 font-mono">accountant@smartpay.com / password123</span>
             </div>
           </div>
         )}

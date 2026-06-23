@@ -63,7 +63,15 @@ export const authService = {
   getCurrentUser: () => {
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('smartpay_user');
-      return userStr ? JSON.parse(userStr) : null;
+      if (userStr) {
+        try {
+          return JSON.parse(userStr);
+        } catch (e) {
+          console.error('Failed to parse smartpay_user', e);
+          localStorage.removeItem('smartpay_user');
+        }
+      }
+      return null;
     }
     return null;
   },

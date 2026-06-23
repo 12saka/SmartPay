@@ -15,8 +15,8 @@ import { authService } from '../services/api';
 export default function ProfileView() {
   const currentUser = authService.getCurrentUser() || {
     name: 'Jane Doe',
-    email: 'owner@smartpay.com',
-    role: 'OWNER',
+    email: 'manager@smartpay.com',
+    role: 'MANAGER',
     branch: { name: 'Nairobi CBD Branch' }
   };
 
