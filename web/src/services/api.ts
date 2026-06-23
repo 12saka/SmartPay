@@ -25,6 +25,19 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // Automatically log out and redirect if the session token is expired or invalid
+    if (
+      (response.status === 401 || response.status === 403) &&
+      (errorData.error === 'Invalid or expired token' || errorData.error === 'Access token required')
+    ) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      }
+    }
+    
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
 

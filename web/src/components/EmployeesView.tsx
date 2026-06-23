@@ -13,7 +13,7 @@ import {
 import { employeeService, branchService } from '../services/api';
 import { Skeleton } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
-import { useToast } from './ui/ToastProvider';
+import { useToast } from '@/components/ui/ToastProvider';
 import { UserPlus as UserPlusIcon } from 'lucide-react';
 
 interface EmployeesViewProps {

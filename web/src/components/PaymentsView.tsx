@@ -10,8 +10,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { payrollService } from '../services/api';
-import { useToast } from './ui/ToastProvider';
-import { useCelebration } from './providers/CelebrationProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useCelebration } from '@/components/providers/CelebrationProvider';
 
 interface PaymentsViewProps {
   selectedBranchId: number | null;

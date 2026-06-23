@@ -1,4 +1,12 @@
 .button {
+  --primary: #0fa361;
+  --primary-hover: #0c8a50;
+  --surface: #ffffff;
+  --surface-hover: #f1f5f9;
+  --border: #e2e8f0;
+  --text-primary: #0f172a;
+  --radius-md: 8px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;

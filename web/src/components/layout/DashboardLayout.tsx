@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAuth } from '../providers/AuthProvider';
-import Sidebar from '../Sidebar';
-import Topbar from '../Topbar';
+import { useAuth } from '@/components/providers/AuthProvider';
+import Sidebar from '@/components/Sidebar';
+import Topbar from '@/components/Topbar';
 import { useRouter, usePathname } from 'next/navigation';
+import { ToastProvider } from '@/components/ui/ToastProvider';
+import { CelebrationProvider } from '@/components/providers/CelebrationProvider';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -30,21 +32,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Sidebar 
-        currentTab={currentTab} 
-        setCurrentTab={setCurrentTab}
-        branchName={userAny.branch ? userAny.branch.name : 'SuperMart HQ'}
-        branches={[]} // branches could be fetched here if needed, or fetched inside Sidebar
-        selectedBranchId={selectedBranchId}
-        setSelectedBranchId={setSelectedBranchId}
-      />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Topbar onLogout={logout} user={user} setCurrentTab={setCurrentTab} />
-        <div className="flex-1 overflow-y-auto bg-slate-50 relative z-0 p-6 lg:p-8">
-          {children}
+    <ToastProvider>
+      <CelebrationProvider>
+        <div className="flex h-screen overflow-hidden bg-slate-50">
+          <Sidebar 
+            currentTab={currentTab} 
+            setCurrentTab={setCurrentTab}
+            branchName={userAny.branch ? userAny.branch.name : 'SuperMart HQ'}
+            branches={[]} // branches could be fetched here if needed, or fetched inside Sidebar
+            selectedBranchId={selectedBranchId}
+            setSelectedBranchId={setSelectedBranchId}
+            currentUser={userAny}
+          />
+          <div className="flex-1 flex flex-col min-w-0">
+            <Topbar onLogout={logout} user={user} setCurrentTab={setCurrentTab} />
+            <div className="flex-1 overflow-y-auto bg-slate-50 relative z-0 p-6 lg:p-8">
+              <div className="max-w-[1600px] mx-auto w-full animate-slide-up">
+                {children}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </CelebrationProvider>
+    </ToastProvider>
   );
 }

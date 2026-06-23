@@ -1,4 +1,11 @@
 .container {
+  --text-primary: #0f172a;
+  --input-bg: #f8fafc;
+  --border: #e2e8f0;
+  --radius-md: 8px;
+  --danger: #ef4444;
+  --surface: #ffffff;
+
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

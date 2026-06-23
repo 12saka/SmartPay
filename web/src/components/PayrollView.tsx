@@ -11,8 +11,8 @@ import {
   FileCheck2
 } from 'lucide-react';
 import { payrollService } from '../services/api';
-import { useToast } from './ui/ToastProvider';
-import { useCelebration } from './providers/CelebrationProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useCelebration } from '@/components/providers/CelebrationProvider';
 
 interface PayrollViewProps {
   selectedBranchId: number | null;

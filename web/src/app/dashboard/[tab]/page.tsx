@@ -39,11 +39,13 @@ export default function TabPage() {
     case 'payments':
       return <PaymentsView selectedBranchId={selectedBranchId} />;
     case 'payslips':
-      return <PayslipsView selectedBranchId={selectedBranchId} />;
+      return <PayslipsView selectedBranchId={selectedBranchId} currentUser={user} />;
+    case 'my-attendance':
     case 'attendance':
-      return <AttendanceView />;
+      return <AttendanceView currentUser={user} />;
+    case 'request-advance':
     case 'advances':
-      return <AdvancesView selectedBranchId={selectedBranchId} />;
+      return <AdvancesView selectedBranchId={selectedBranchId} currentUser={user} />;
     case 'branches':
       return <BranchesView />;
     case 'reports':
@@ -60,8 +62,9 @@ export default function TabPage() {
     case 'wallet':
     case 'finance':
       return <WalletView />;
+    case 'profile-settings':
     case 'profile':
-      return <ProfileView />;
+      return <ProfileView currentUser={user} />;
     case 'approvals':
       return <PlaceholderView title="Approvals" />;
     default:

@@ -12,8 +12,12 @@ import {
 } from 'lucide-react';
 import { authService } from '../services/api';
 
-export default function ProfileView() {
-  const currentUser = authService.getCurrentUser() || {
+interface ProfileViewProps {
+  currentUser?: any;
+}
+
+export default function ProfileView({ currentUser: propCurrentUser }: ProfileViewProps) {
+  const currentUser = propCurrentUser || authService.getCurrentUser() || {
     name: 'Jane Doe',
     email: 'manager@smartpay.com',
     role: 'MANAGER',
