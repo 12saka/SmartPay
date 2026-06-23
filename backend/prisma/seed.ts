@@ -182,6 +182,19 @@ async function main() {
       }
     });
 
+    // Create corresponding User account so they can log in
+    await prisma.user.create({
+      data: {
+        email: email,
+        password: hashedPassword,
+        name: emp.fullName,
+        role: 'EMPLOYEE',
+        status: 'ACTIVE',
+        branchId: emp.branchId,
+        twoFactorEnabled: false
+      }
+    });
+
     // Seed Documents
     await prisma.document.create({
       data: {
