@@ -164,7 +164,7 @@ export const payrollService = {
       body: JSON.stringify(updateData),
     });
   },
-  updatePeriodStatus: async (month: string, action: 'HR_APPROVE' | 'FINANCE_APPROVE' | 'COMPANY_APPROVE' | 'RESET', branchId?: number) => {
+  updatePeriodStatus: async (month: string, action: 'SUBMIT' | 'HR_APPROVE' | 'FINANCE_APPROVE' | 'COMPANY_APPROVE' | 'RESET', branchId?: number) => {
     return request<any>('/payroll/period-status', {
       method: 'PUT',
       body: JSON.stringify({ month, action, branchId }),
@@ -238,6 +238,12 @@ export const notificationService = {
     const query = new URLSearchParams();
     if (params.category) query.append('category', params.category);
     return request<any[]>(`/notifications?${query.toString()}`);
+  },
+  create: async (notificationData: { userId?: number | null; title: string; message: string; category: string }) => {
+    return request<any>('/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notificationData),
+    });
   },
   markRead: async (id: number) => {
     return request<any>(`/notifications/${id}/read`, {

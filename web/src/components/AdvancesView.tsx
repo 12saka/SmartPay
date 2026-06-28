@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   HandCoins, 
   CheckCircle, 
@@ -16,6 +17,9 @@ interface AdvancesViewProps {
 }
 
 export default function AdvancesView({ selectedBranchId, currentUser }: AdvancesViewProps) {
+  const searchParams = useSearchParams();
+  const action = searchParams.get('action');
+
   const { celebrate } = useCelebration();
   const [advances, setAdvances] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -78,6 +82,12 @@ export default function AdvancesView({ selectedBranchId, currentUser }: Advances
     setErrorMsg('');
     setIsRequestOpen(true);
   };
+
+  useEffect(() => {
+    if (action === 'new' && employees.length > 0) {
+      handleOpenRequest();
+    }
+  }, [action, employees]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

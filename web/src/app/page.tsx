@@ -40,6 +40,9 @@ export default function LoginPage() {
       }
 
       // Store in auth provider state and local storage
+      if (data.user && data.user.status === 'SUSPENDED') {
+        throw new Error('This account has been suspended. Access is restricted.');
+      }
       login(data.accessToken, data.user);
 
       // Route based on role

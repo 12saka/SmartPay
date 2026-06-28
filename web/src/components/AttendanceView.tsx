@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Calendar, 
   UploadCloud, 
@@ -16,12 +17,22 @@ interface AttendanceViewProps {
 }
 
 export default function AttendanceView({ currentUser }: AttendanceViewProps) {
+  const searchParams = useSearchParams();
+  const action = searchParams.get('action');
+
   const { celebrate } = useCelebration();
   const [activeTab, setActiveTab] = useState<'logs' | 'shifts'>('logs');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   
   const isEmployee = currentUser?.role === 'EMPLOYEE';
+  const isAccountant = currentUser?.role === 'ACCOUNTANT';
+
+  useEffect(() => {
+    if (action === 'new' && !isEmployee) {
+      setShowUploadModal(true);
+    }
+  }, [action, isEmployee]);
 
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState<string | null>(null);
@@ -40,10 +51,71 @@ export default function AttendanceView({ currentUser }: AttendanceViewProps) {
 
   // Static mock shift templates
   const [shifts, setShifts] = useState([
-    { id: 'morning', name: 'Morning Shift', hours: '08:00 AM - 05:00 PM', count: 12, branch: 'Main Supermarket' },
-    { id: 'afternoon', name: 'Afternoon Shift', hours: '01:00 PM - 10:00 PM', count: 8, branch: 'Main Supermarket' },
-    { id: 'night', name: 'Night Shift', hours: '10:00 PM - 07:00 AM', count: 4, branch: 'Wholesale Depot' }
+    { id: 'morning', name: 'Morning Shift', hours: '08:00 AM - 05:00 PM', count: 12, branch: 'Main Supermarket', employees: ['David Kimani', 'Mercy Achieng', 'Sarah Mwangi', 'John Mwaniki', 'Esther Wanjiru'] },
+    { id: 'afternoon', name: 'Afternoon Shift', hours: '01:00 PM - 10:00 PM', count: 8, branch: 'Main Supermarket', employees: ['Peter Ndwiga', 'Joseph Kiprop', 'Alice Njeri', 'Michael Ochieng'] },
+    { id: 'night', name: 'Night Shift', hours: '10:00 PM - 07:00 AM', count: 4, branch: 'Wholesale Depot', employees: ['James Omondi', 'Grace Kendi', 'Robert Njoroge', 'Lydia Atieno'] }
   ]);
+
+  // Load clock state from localStorage on mount
+  useEffect(() => {
+    if (currentUser && isEmployee) {
+      const emailKey = currentUser.email.toLowerCase();
+      const savedDate = localStorage.getItem(`clockDate_${emailKey}`);
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      let savedIn = false;
+      let savedTime: string | null = null;
+      let savedOut: string | null = null;
+      
+      if (savedDate && savedDate !== todayStr) {
+        localStorage.removeItem(`clockedIn_${emailKey}`);
+        localStorage.removeItem(`clockInTime_${emailKey}`);
+        localStorage.removeItem(`clockOutTime_${emailKey}`);
+        localStorage.removeItem(`clockDate_${emailKey}`);
+      } else {
+        savedIn = localStorage.getItem(`clockedIn_${emailKey}`) === 'true';
+        savedTime = localStorage.getItem(`clockInTime_${emailKey}`);
+        savedOut = localStorage.getItem(`clockOutTime_${emailKey}`);
+      }
+      
+      setClockedIn(savedIn);
+      setClockInTime(savedTime);
+      setClockOutTime(savedOut);
+      
+      if (savedTime) {
+        setLogs(prev => {
+          const hasTodayLog = prev.some(l => l.date === todayStr);
+          if (hasTodayLog) {
+            return prev.map(l => {
+              if (l.date === todayStr) {
+                return {
+                  ...l,
+                  in: savedTime!,
+                  out: savedOut || '—',
+                  overtime: savedOut ? 0.5 : 0.0,
+                  status: 'Present'
+                };
+              }
+              return l;
+            });
+          } else {
+            const todayLog = {
+              id: Date.now(),
+              name: currentUser?.name || 'David Kimani',
+              num: 'EMP001',
+              date: todayStr,
+              shift: 'Morning Shift',
+              in: savedTime,
+              out: savedOut || '—',
+              overtime: savedOut ? 0.5 : 0.0,
+              status: 'Present'
+            };
+            return [todayLog, ...prev];
+          }
+        });
+      }
+    }
+  }, [currentUser, isEmployee]);
 
   useEffect(() => {
     // Tick to update time on UI
@@ -62,6 +134,16 @@ export default function AttendanceView({ currentUser }: AttendanceViewProps) {
   const handleClockIn = () => {
     const now = new Date();
     const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const emailKey = currentUser?.email?.toLowerCase();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    if (emailKey) {
+      localStorage.setItem(`clockedIn_${emailKey}`, 'true');
+      localStorage.setItem(`clockInTime_${emailKey}`, formattedTime);
+      localStorage.setItem(`clockDate_${emailKey}`, todayStr);
+      localStorage.removeItem(`clockOutTime_${emailKey}`);
+    }
+
     setClockedIn(true);
     setClockInTime(formattedTime);
     setClockOutTime(null);
@@ -71,26 +153,37 @@ export default function AttendanceView({ currentUser }: AttendanceViewProps) {
       id: Date.now(),
       name: currentUser?.name || 'David Kimani',
       num: 'EMP001',
-      date: now.toISOString().split('T')[0],
-      shift: 'Morning',
+      date: todayStr,
+      shift: 'Morning Shift',
       in: formattedTime,
       out: '—',
       overtime: 0.0,
       status: 'Present'
     };
-    setLogs(prev => [newLog, ...prev]);
+    setLogs(prev => {
+      const filtered = prev.filter(l => l.date !== todayStr);
+      return [newLog, ...filtered];
+    });
     celebrate();
   };
 
   const handleClockOut = () => {
     const now = new Date();
     const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const emailKey = currentUser?.email?.toLowerCase();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    if (emailKey) {
+      localStorage.setItem(`clockedIn_${emailKey}`, 'false');
+      localStorage.setItem(`clockOutTime_${emailKey}`, formattedTime);
+    }
+
     setClockedIn(false);
     setClockOutTime(formattedTime);
     
     // Update the first log (today's check-in) in the logs list
     setLogs(prev => prev.map((log) => {
-      if (log.date === now.toISOString().split('T')[0] && log.out === '—') {
+      if (log.date === todayStr) {
         return {
           ...log,
           out: formattedTime,
@@ -101,6 +194,7 @@ export default function AttendanceView({ currentUser }: AttendanceViewProps) {
     }));
     celebrate();
   };
+
 
   const handleUpload = () => {
     setUploadProgress(0);
@@ -153,6 +247,18 @@ export default function AttendanceView({ currentUser }: AttendanceViewProps) {
           </div>
         )}
       </div>
+
+      {isAccountant && (
+        <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl text-xs font-medium space-y-2 animate-fade-in flex items-start space-x-3 shadow-sm">
+          <FileCheck className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <h3 className="font-bold text-emerald-950">Accountant Action Items</h3>
+            <p className="text-emerald-800 leading-relaxed mt-1">
+              You are responsible for auditing attendance records and shift coverage. Biometric logs and uploaded attendance sheets directly feed regular and overtime hours into the payroll engine. Verify the shift configurations and check the payment impact gauge below before processing the monthly payroll.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Clock Simulator for Employees */}
       {isEmployee && (
@@ -283,50 +389,106 @@ export default function AttendanceView({ currentUser }: AttendanceViewProps) {
 
       {/* Content panel */}
       {activeTab === 'logs' ? (
-        <div className="bg-white border border-slate-200/80 rounded-xl shadow-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm text-slate-500">
-              <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4">Employee</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Assigned Shift</th>
-                  <th className="px-6 py-4">Check-In</th>
-                  <th className="px-6 py-4">Check-Out</th>
-                  <th className="px-6 py-4">Overtime Hours</th>
-                  <th className="px-6 py-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {displayLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50 text-slate-700">
-                    <td className="px-6 py-4">
-                      <div>
-                        <span className="font-bold text-slate-900 block">{log.name}</span>
-                        <span className="text-xs text-slate-400 block mt-0.5">{log.num || 'EMP002'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs">{log.date}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-slate-800">{log.shift} Shift</span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-semibold">{log.in}</td>
-                    <td className="px-6 py-4 text-xs font-semibold">{log.out}</td>
-                    <td className="px-6 py-4 font-bold text-slate-800">
-                      {log.overtime > 0 ? `${log.overtime} hrs` : '—'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        log.status === 'Present' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                      }`}>
-                        {log.status}
-                      </span>
-                    </td>
+        <div className="space-y-6">
+          <div className="bg-white border border-slate-200/80 rounded-xl shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm text-slate-500">
+                <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4">Employee</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Assigned Shift</th>
+                    <th className="px-6 py-4">Check-In</th>
+                    <th className="px-6 py-4">Check-Out</th>
+                    <th className="px-6 py-4">Overtime Hours</th>
+                    <th className="px-6 py-4">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {displayLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-50/50 text-slate-700">
+                      <td className="px-6 py-4">
+                        <div>
+                          <span className="font-bold text-slate-900 block">{log.name}</span>
+                          <span className="text-xs text-slate-400 block mt-0.5">{log.num || 'EMP002'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs">{log.date}</td>
+                      <td className="px-6 py-4">
+                        <span className="text-slate-800">{log.shift} Shift</span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-semibold">{log.in}</td>
+                      <td className="px-6 py-4 text-xs font-semibold">{log.out}</td>
+                      <td className="px-6 py-4 font-bold text-slate-800">
+                        {log.overtime > 0 ? `${log.overtime} hrs` : '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          log.status === 'Present' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Payment Impact Gauge Panel */}
+          {isAccountant && (
+            <div className="bg-white border border-slate-200/80 rounded-xl shadow-card overflow-hidden animate-slide-up">
+              <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Payroll Payment Impact Gauge</h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Estimated overtime payouts and absent day deductions based on current period attendance logs</p>
+                </div>
+                <div className="bg-emerald-50 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-100 shrink-0 self-start sm:self-auto">
+                  Total Projected Overtime: KES 96,750
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-3">Employee</th>
+                      <th className="px-6 py-3 text-center">Days Present</th>
+                      <th className="px-6 py-3 text-center">Absent Days</th>
+                      <th className="px-6 py-3 text-center">Deductions (KES)</th>
+                      <th className="px-6 py-3 text-center">Overtime Hours</th>
+                      <th className="px-6 py-3 text-center">Overtime Pay (KES)</th>
+                      <th className="px-6 py-3 text-right">Net Payroll Impact</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                    {[
+                      { name: 'David Kimani', role: 'Cashier (Morning Shift)', presentDays: 21, absentDays: 1, deductions: 2000, overtimeHours: 8.5, overtimePay: 12750, netImpact: 10750 },
+                      { name: 'Mercy Achieng', role: 'Head Cashier (Morning Shift)', presentDays: 22, absentDays: 0, deductions: 0, overtimeHours: 12.0, overtimePay: 24000, netImpact: 24000 },
+                      { name: 'Peter Ndwiga', role: 'Store Keeper (Afternoon Shift)', presentDays: 20, absentDays: 2, deductions: 4000, overtimeHours: 4.0, overtimePay: 6000, netImpact: 2000 },
+                      { name: 'Sarah Mwangi', role: 'Sales Rep (Morning Shift)', presentDays: 22, absentDays: 0, deductions: 0, overtimeHours: 0.0, overtimePay: 0, netImpact: 0 },
+                      { name: 'James Omondi', role: 'Night Guard (Night Shift)', presentDays: 22, absentDays: 0, deductions: 0, overtimeHours: 27.0, overtimePay: 54000, netImpact: 54000 },
+                    ].map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50">
+                        <td className="px-6 py-3.5">
+                          <div className="font-bold text-slate-800 block">{row.name}</div>
+                          <div className="text-[10px] text-slate-400 block mt-0.5">{row.role}</div>
+                        </td>
+                        <td className="px-6 py-3.5 text-center font-mono">{row.presentDays} / 22</td>
+                        <td className="px-6 py-3.5 text-center font-mono text-rose-600 font-bold">{row.absentDays}</td>
+                        <td className="px-6 py-3.5 text-center font-mono text-rose-600 font-bold">-{row.deductions.toLocaleString()} KES</td>
+                        <td className="px-6 py-3.5 text-center font-mono text-emerald-600 font-bold">{row.overtimeHours} hrs</td>
+                        <td className="px-6 py-3.5 text-center font-mono text-emerald-600 font-bold">+{row.overtimePay.toLocaleString()} KES</td>
+                        <td className={`px-6 py-3.5 text-right font-mono font-extrabold ${row.netImpact >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          {row.netImpact >= 0 ? '+' : ''}{row.netImpact.toLocaleString()} KES
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -348,6 +510,18 @@ export default function AttendanceView({ currentUser }: AttendanceViewProps) {
                   <span>Branch: {s.branch}</span>
                 </div>
               </div>
+              {s.employees && (
+                <div className="border-t border-slate-100 pt-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Assigned Staff</span>
+                  <div className="flex flex-wrap gap-1">
+                    {s.employees.map((empName, i) => (
+                      <span key={i} className="text-[10px] bg-slate-50 border border-slate-100 font-semibold px-2 py-0.5 rounded-full text-slate-600">
+                        {empName}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button className="w-full text-center border border-slate-200 hover:border-slate-300 text-slate-600 font-bold py-2 rounded-lg text-xs transition-colors">
                 Configure Shift Roster
               </button>

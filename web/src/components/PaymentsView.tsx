@@ -12,12 +12,16 @@ import {
 import { payrollService } from '../services/api';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useCelebration } from '@/components/providers/CelebrationProvider';
+import { useAuth } from './providers/AuthProvider';
 
 interface PaymentsViewProps {
   selectedBranchId: number | null;
 }
 
 export default function PaymentsView({ selectedBranchId }: PaymentsViewProps) {
+  const { user } = useAuth();
+  const canPay = ['OWNER', 'ACCOUNTANT'].includes(user?.role || '');
+
   const { success, error: toastError } = useToast();
   const { celebrate } = useCelebration();
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
@@ -231,10 +235,11 @@ export default function PaymentsView({ selectedBranchId }: PaymentsViewProps) {
                 {/* Big Payout Action */}
                 <button
                   onClick={handlePayAll}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md flex items-center justify-center space-x-3 transition-colors text-base"
+                  disabled={processing || !canPay}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-3.5 px-4 rounded-xl shadow-md flex items-center justify-center space-x-3 transition-colors text-base cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Wallet className="w-5 h-5" />
-                  <span>Execute Bulk Payment</span>
+                  <span>{!canPay ? 'Payment Restricted to Accountants' : 'Execute Bulk Payment'}</span>
                 </button>
               </div>
             )}

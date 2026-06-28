@@ -9,7 +9,17 @@ import {
 } from 'lucide-react';
 import { branchService } from '../services/api';
 
-export default function BranchesView() {
+interface BranchesViewProps {
+  selectedBranchId: number | null;
+  setSelectedBranchId: (id: number | null) => void;
+  setCurrentTab: (tab: string) => void;
+}
+
+export default function BranchesView({
+  selectedBranchId,
+  setSelectedBranchId,
+  setCurrentTab
+}: BranchesViewProps) {
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -85,7 +95,10 @@ export default function BranchesView() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {branches.map((b) => (
-            <div key={b.id} className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex flex-col space-y-4">
+            <div 
+              key={b.id} 
+              className="bg-white p-5 border border-slate-200/80 rounded-xl shadow-card flex flex-col space-y-4 hover:shadow-sm hover:border-slate-200 transition-all cursor-default group"
+            >
               <div className="flex items-center space-x-3">
                 <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl">
                   <GitBranch className="w-5 h-5" />
@@ -96,9 +109,22 @@ export default function BranchesView() {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>Location: {b.location || 'Not Specified'}</span>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100/60">
+                <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Location: {b.location || 'Not Specified'}</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('selectedBranchId', b.id.toString());
+                    }
+                    setCurrentTab('branch-details');
+                  }}
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100/60 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                >
+                  View Details
+                </button>
               </div>
             </div>
           ))}

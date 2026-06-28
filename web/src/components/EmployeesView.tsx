@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Search, 
   UserPlus, 
@@ -11,6 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { employeeService, branchService } from '../services/api';
+import EmployeeProfileView from './EmployeeProfileView';
 import { Skeleton } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -21,6 +23,9 @@ interface EmployeesViewProps {
 }
 
 export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) {
+  const searchParams = useSearchParams();
+  const action = searchParams.get('action');
+
   const { success, error: toastError, info } = useToast();
   const [employees, setEmployees] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -30,6 +35,7 @@ export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) 
   // Modal states
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -63,6 +69,13 @@ export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) 
       ]);
       setEmployees(empList);
       setBranches(branchList);
+      
+      if (selectedEmployee) {
+        const updated = empList.find((e: any) => e.id === selectedEmployee.id);
+        if (updated) {
+          setSelectedEmployee(updated);
+        }
+      }
     } catch (error) {
       console.error('Failed to load employees:', error);
     } finally {
@@ -92,6 +105,12 @@ export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) 
     setErrorMsg('');
     setIsAddOpen(true);
   };
+
+  useEffect(() => {
+    if (action === 'new') {
+      handleOpenAdd();
+    }
+  }, [action]);
 
   const handleOpenEdit = (emp: any) => {
     setEditingEmployee(emp);
@@ -158,7 +177,19 @@ export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) 
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 animate-fade-in">
-      {/* Top Banner and Actions */}
+      {selectedEmployee ? (
+        <EmployeeProfileView 
+          employee={selectedEmployee} 
+          onBack={() => { setSelectedEmployee(null); loadData(); }} 
+          onEdit={() => handleOpenEdit(selectedEmployee)}
+          onToggleStatus={handleToggleStatus}
+          branches={branches}
+          successToast={success}
+          errorToast={toastError}
+        />
+      ) : (
+        <>
+          {/* Top Banner and Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 leading-tight">Employees Directory</h1>
@@ -237,7 +268,10 @@ export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) 
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
                 {filtered.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-emerald-50/50 text-slate-700 transition-colors group cursor-pointer">
+                  <tr 
+                    key={emp.id} 
+                    className="hover:bg-slate-50/50 text-slate-700 transition-colors group cursor-default"
+                  >
                     <td className="px-6 py-4 font-bold text-slate-900">{emp.employeeNumber}</td>
                     <td className="px-6 py-4">
                       <div>
@@ -273,26 +307,12 @@ export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) 
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center space-x-2.5">
-                        <button 
-                          onClick={() => handleOpenEdit(emp)}
-                          className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded transition-colors"
-                          title="Edit Employee"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleToggleStatus(emp.id, emp.status)}
-                          className={`p-1 rounded transition-colors ${
-                            emp.status === 'ACTIVE' 
-                              ? 'text-rose-400 hover:bg-rose-50 hover:text-rose-700' 
-                              : 'text-emerald-400 hover:bg-emerald-50 hover:text-emerald-700'
-                          }`}
-                          title={emp.status === 'ACTIVE' ? 'Suspend Employee' : 'Reactivate Employee'}
-                        >
-                          {emp.status === 'ACTIVE' ? <XCircle className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                        </button>
-                      </div>
+                      <button 
+                        onClick={() => setSelectedEmployee(emp)}
+                        className="text-xs font-bold text-emerald-600 hover:text-emerald-750 bg-emerald-50 hover:bg-emerald-100/60 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                      >
+                        View Details
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -301,6 +321,8 @@ export default function EmployeesView({ selectedBranchId }: EmployeesViewProps) 
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Add/Edit Modal Dialog */}
       {(isAddOpen || editingEmployee) && (

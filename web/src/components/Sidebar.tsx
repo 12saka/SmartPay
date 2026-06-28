@@ -38,6 +38,48 @@ export default function Sidebar({
 }: SidebarProps) {
   
   const role = currentUser?.role || 'OWNER';
+ 
+  const [activePeriod, setActivePeriod] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activePeriod') || '2026-06';
+    }
+    return '2026-06';
+  });
+  const [isEditingPeriod, setIsEditingPeriod] = React.useState(false);
+ 
+  const handlePeriodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    if (!rawVal) return;
+    const val = rawVal.slice(0, 7); // Extract YYYY-MM
+    setActivePeriod(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activePeriod', val);
+      window.location.reload();
+    }
+  };
+ 
+  const formatPeriodLabel = (periodStr: string) => {
+    try {
+      const [year, month] = periodStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return date.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+    } catch (e) {
+      return periodStr;
+    }
+  };
+ 
+  const getPeriodDaysLabel = (periodStr: string) => {
+    try {
+      const [year, month] = periodStr.split('-');
+      const y = parseInt(year);
+      const m = parseInt(month);
+      const lastDay = new Date(y, m, 0).getDate();
+      const monthName = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'short' });
+      return `01 ${monthName} - ${lastDay} ${monthName} ${y}`;
+    } catch (e) {
+      return '';
+    }
+  };
 
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['OWNER', 'MANAGER', 'ACCOUNTANT', 'EMPLOYEE'] },
@@ -56,7 +98,7 @@ export default function Sidebar({
     { id: 'compliance', label: 'Compliance', icon: FileCheck, roles: ['OWNER', 'MANAGER'] },
     { id: 'notifications', label: 'Notifications', icon: Bell, badge: 3, roles: ['OWNER', 'MANAGER', 'ACCOUNTANT', 'EMPLOYEE'] },
     { id: 'audit-logs', label: 'Audit Logs', icon: Activity, roles: ['OWNER', 'MANAGER'] },
-    { id: 'settings', label: 'Settings', icon: Settings, roles: ['OWNER', 'MANAGER'] },
+    { id: 'settings', label: 'Settings', icon: Settings, roles: ['OWNER', 'MANAGER', 'ACCOUNTANT'] },
     { id: 'profile-settings', label: 'Profile Settings', icon: Settings, roles: ['EMPLOYEE'] },
   ];
 
@@ -111,37 +153,64 @@ export default function Sidebar({
       <div className="px-5 py-4 mx-4 mb-4 bg-black/20 border border-white/5 rounded-xl flex flex-col space-y-3">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Payroll Period</span>
-          <span className="text-sm font-bold text-slate-200 block mt-0.5">May 2024</span>
-          <span className="text-[10px] text-slate-500 mt-0.5 block">01 May - 31 May 2024</span>
+          <span className="text-sm font-bold text-slate-200 block mt-0.5">{formatPeriodLabel(activePeriod)}</span>
+          <span className="text-[10px] text-slate-500 mt-0.5 block">{getPeriodDaysLabel(activePeriod)}</span>
         </div>
-        <button className="w-full bg-[var(--brand-green)] hover:bg-[var(--brand-green)]/90 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors btn-hover-scale">
-          Change Period
-        </button>
+        {isEditingPeriod ? (
+          <div className="space-y-2">
+            <input
+              type="date"
+              value={`${activePeriod}-01`}
+              onChange={handlePeriodChange}
+              className="w-full bg-black/35 text-xs text-white border border-white/10 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-[var(--brand-green)] font-semibold"
+              autoFocus
+            />
+            <button 
+              onClick={() => setIsEditingPeriod(false)}
+              className="w-full bg-white/10 hover:bg-white/15 text-slate-300 text-[10px] font-bold py-1 px-2 rounded transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={() => setIsEditingPeriod(true)}
+            className="w-full bg-[var(--brand-green)] hover:bg-[var(--brand-green)]/90 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors btn-hover-scale"
+          >
+            Change Period
+          </button>
+        )}
       </div>
 
       {/* Branch Selector Dropdown Footer */}
-      <div className="p-4 border-t border-white/5 flex items-center justify-between hover:bg-white/5 cursor-pointer group transition-colors">
+      <div className={`p-4 border-t border-white/5 flex items-center justify-between transition-colors ${role !== 'EMPLOYEE' ? 'hover:bg-white/5 cursor-default' : 'cursor-default'} group`}>
         <div className="flex items-center space-x-3 min-w-0">
           <div className="w-8 h-8 rounded-full bg-black/30 border border-white/5 flex items-center justify-center shrink-0">
             <GitBranch className="w-4 h-4 text-[var(--brand-green)]" />
           </div>
           <div className="min-w-0">
             <span className="text-[10px] text-slate-500 block">Active Branch</span>
-            <select
-              value={selectedBranchId || ''}
-              onChange={(e) => setSelectedBranchId(e.target.value ? parseInt(e.target.value) : null)}
-              className="text-xs font-bold text-slate-200 bg-transparent border-none p-0 outline-none w-36 select-none cursor-pointer focus:ring-0"
-            >
-              <option value="" className="bg-sidebar-bg text-slate-200">SuperMart HQ (All)</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id} className="bg-sidebar-bg text-slate-200">
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            {role === 'EMPLOYEE' ? (
+              <span className="text-xs font-bold text-slate-200 block mt-0.5 truncate w-36">{branchName}</span>
+            ) : (
+              <select
+                value={selectedBranchId || ''}
+                onChange={(e) => setSelectedBranchId(e.target.value ? parseInt(e.target.value) : null)}
+                className="text-xs font-bold text-slate-200 bg-transparent border-none p-0 outline-none w-36 select-none cursor-pointer focus:ring-0"
+              >
+                <option value="" className="bg-sidebar-bg text-slate-200">SuperMart HQ (All)</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id} className="bg-sidebar-bg text-slate-200">
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
-        <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300" />
+        {role !== 'EMPLOYEE' && (
+          <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300" />
+        )}
       </div>
     </aside>
   );

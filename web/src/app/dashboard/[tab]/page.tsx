@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import BranchDetailsView from '@/components/BranchDetailsView';
 
 import EmployeesView from '@/components/EmployeesView';
 import PayrollView from '@/components/PayrollView';
@@ -23,11 +24,75 @@ import PlaceholderView from '@/components/PlaceholderView';
 export default function TabPage() {
   const { user } = useAuth();
   const params = useParams();
+  const router = useRouter();
   const tab = params.tab as string;
+
+  const setCurrentTab = (tab: string) => {
+    if (tab === 'dashboard') {
+      router.push('/dashboard');
+    } else {
+      router.push(`/dashboard/${tab}`);
+    }
+  };
+
+  const handleSelectBranch = (id: number | null) => {
+    if (typeof window !== 'undefined') {
+      if (id === null) {
+        localStorage.setItem('selectedBranchId', '');
+      } else {
+        localStorage.setItem('selectedBranchId', id.toString());
+      }
+      window.location.reload();
+    }
+    setSelectedBranchId(id);
+  };
 
   // Next.js TS strictly checks user properties. We cast to any to bypass the missing 'branch' property on the User type
   const userAny = user as any;
-  const selectedBranchId = userAny?.branch?.id || null;
+
+  const [selectedBranchId, setSelectedBranchId] = React.useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          if (parsed.role === 'EMPLOYEE') {
+            return parsed.branch?.id || null;
+          }
+        } catch (e) {}
+      }
+      const stored = localStorage.getItem('selectedBranchId');
+      if (stored !== null && stored !== '') {
+        return parseInt(stored);
+      }
+    }
+    return null;
+  });
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (userAny?.role === 'EMPLOYEE') {
+        setSelectedBranchId(userAny?.branch?.id || null);
+      } else {
+        const stored = localStorage.getItem('selectedBranchId');
+        if (stored === null || stored === '') {
+          const defaultBranchId = userAny?.branch?.id || null;
+          setSelectedBranchId(defaultBranchId);
+        }
+      }
+    }
+  }, [userAny]);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && userAny?.role !== 'EMPLOYEE') {
+      const stored = localStorage.getItem('selectedBranchId');
+      if (stored !== null && stored !== '') {
+        setSelectedBranchId(parseInt(stored));
+      } else {
+        setSelectedBranchId(null);
+      }
+    }
+  }, [tab, userAny]);
 
   switch (tab) {
     case 'employees':
@@ -47,7 +112,21 @@ export default function TabPage() {
     case 'advances':
       return <AdvancesView selectedBranchId={selectedBranchId} currentUser={user} />;
     case 'branches':
-      return <BranchesView />;
+      return (
+        <BranchesView 
+          selectedBranchId={selectedBranchId}
+          setSelectedBranchId={handleSelectBranch}
+          setCurrentTab={setCurrentTab}
+        />
+      );
+    case 'branch-details':
+      return (
+        <BranchDetailsView 
+          selectedBranchId={selectedBranchId}
+          setCurrentTab={setCurrentTab}
+          currentUser={user}
+        />
+      );
     case 'reports':
       return <ReportsView />;
     case 'compliance':
@@ -58,7 +137,7 @@ export default function TabPage() {
     case 'audit':
       return <AuditLogsView />;
     case 'settings':
-      return <SettingsView />;
+      return <SettingsView currentUser={user} />;
     case 'wallet':
     case 'finance':
       return <WalletView />;

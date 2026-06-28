@@ -23,7 +23,12 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
   const { success, error: toastError, info } = useToast();
   const { celebrate } = useCelebration();
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
-  const [month, setMonth] = useState('2026-06');
+  const [month, setMonth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activePeriod') || '2026-06';
+    }
+    return '2026-06';
+  });
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -103,7 +108,7 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
     }
   };
 
-  const handleApprovalAction = async (action: 'HR_APPROVE' | 'FINANCE_APPROVE' | 'COMPANY_APPROVE' | 'RESET') => {
+  const handleApprovalAction = async (action: 'SUBMIT' | 'HR_APPROVE' | 'FINANCE_APPROVE' | 'COMPANY_APPROVE' | 'RESET') => {
     try {
       setErrorMsg('');
       await payrollService.updatePeriodStatus(month, action, selectedBranchId || undefined);
@@ -115,6 +120,8 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
         success('HR Approved', `HR has signed off on the ${month} payroll.`);
       } else if (action === 'FINANCE_APPROVE') {
         success('Finance Approved', `Finance has reviewed and approved the ${month} payroll.`);
+      } else if (action === 'SUBMIT') {
+        success('Submitted to Accountant', `Payroll draft has been submitted to the accountant.`);
       } else if (action === 'RESET') {
         info('Payroll Reset', `${month} payroll has been reset to draft.`);
       }
@@ -138,6 +145,9 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
     // Check if all are FINANCE_APPROVED
     if (payrollRuns.every(r => r.status === 'FINANCE_APPROVED')) return 'FINANCE_APPROVED';
     
+    // Check if all are SUBMITTED
+    if (payrollRuns.every(r => r.status === 'SUBMITTED')) return 'SUBMITTED';
+    
     // Check if all are HR_APPROVED
     if (payrollRuns.every(r => r.status === 'HR_APPROVED')) return 'HR_APPROVED';
     
@@ -160,16 +170,24 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
         </div>
         <div className="flex items-center space-x-3">
           <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            type="date"
+            value={`${month}-01`}
+            onChange={(e) => {
+              const rawVal = e.target.value;
+              if (!rawVal) return;
+              const val = rawVal.slice(0, 7);
+              setMonth(val);
+              localStorage.setItem('activePeriod', val);
+              // Trigger window storage/reload to keep sidebar aligned
+              window.dispatchEvent(new Event('storage'));
+            }}
             className="text-sm border border-slate-200 bg-white rounded-lg px-3 py-2 outline-none font-semibold text-slate-700"
           />
-          {status === 'NO_DATA' && (
+          {status === 'NO_DATA' && ['OWNER', 'MANAGER'].includes(currentUser?.role) && (
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-semibold px-4 py-2 rounded-lg text-sm shadow-sm transition-colors"
+              className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-semibold px-4 py-2 rounded-lg text-sm shadow-sm transition-colors cursor-pointer"
             >
               <Calculator className="w-4 h-4" />
               <span>{generating ? 'Processing...' : 'Generate Draft'}</span>
@@ -201,43 +219,43 @@ export default function PayrollView({ selectedBranchId, currentUser }: PayrollVi
               <span className="text-sm font-bold text-slate-800 block mt-0.5">
                 {status === 'PAID' && '🎉 Salaries Disbursed & Paid'}
                 {status === 'APPROVED' && '✅ Approved by Manager - Ready for Payout'}
-                {status === 'FINANCE_APPROVED' && '💼 Finance Approved - Pending Manager Sign-off'}
-                {status === 'HR_APPROVED' && '📝 HR Approved - Pending Finance Review'}
-                {status === 'DRAFT' && '✏️ Draft Reviewing - Pending HR Approval'}
+                {status === 'FINANCE_APPROVED' && '💼 Accountant Approved - Pending Manager Sign-off'}
+                {status === 'SUBMITTED' && '📥 Submitted to Accountant - Pending Accountant Approval'}
+                {status === 'DRAFT' && '✏️ Draft Reviewing - Pending Submission to Accountant'}
               </span>
             </div>
           </div>
-
+ 
           {/* Action buttons based on Role */}
           <div className="flex items-center space-x-2.5">
-            {status === 'DRAFT' && (
+            {status === 'DRAFT' && ['OWNER', 'MANAGER'].includes(currentUser?.role) && (
               <button 
-                onClick={() => handleApprovalAction('HR_APPROVE')}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors shadow-sm"
+                onClick={() => handleApprovalAction('SUBMIT')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors shadow-sm cursor-pointer"
               >
-                Approve as HR
+                Submit to Accountant
               </button>
             )}
-            {status === 'HR_APPROVED' && (
+            {status === 'SUBMITTED' && currentUser?.role === 'ACCOUNTANT' && (
               <button 
                 onClick={() => handleApprovalAction('FINANCE_APPROVE')}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors shadow-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors shadow-sm cursor-pointer"
               >
-                Approve as Finance
+                Approve as Accountant
               </button>
             )}
-            {status === 'FINANCE_APPROVED' && (
+            {status === 'FINANCE_APPROVED' && ['OWNER', 'MANAGER'].includes(currentUser?.role) && (
               <button 
                 onClick={() => handleApprovalAction('COMPANY_APPROVE')}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors shadow-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors shadow-sm cursor-pointer"
               >
-                Give Manager Approval
+                Approve as Manager
               </button>
             )}
-            {status !== 'PAID' && (
+            {status !== 'PAID' && status !== 'DRAFT' && ['OWNER', 'MANAGER', 'ACCOUNTANT'].includes(currentUser?.role) && (
               <button 
                 onClick={() => handleApprovalAction('RESET')}
-                className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 font-semibold text-xs py-2 px-3 rounded-lg transition-colors"
+                className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 font-semibold text-xs py-2 px-3 rounded-lg transition-colors cursor-pointer"
               >
                 Reset Draft
               </button>
