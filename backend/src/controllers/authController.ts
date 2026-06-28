@@ -63,7 +63,13 @@ export async function login(req: AuthenticatedRequest, res: Response) {
       data: { failedLoginAttempts: 0, lastLoginIp: req.ip }
     });
 
-    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
+    const { accessToken, refreshToken } = generateTokens(
+      user.id,
+      user.role,
+      user.email,
+      user.name,
+      user.branchId
+    );
 
     return res.json({
       accessToken,

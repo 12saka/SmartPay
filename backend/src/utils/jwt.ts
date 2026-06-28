@@ -1,18 +1,25 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretfallback';
-const REFRESH_SECRET = process.env.REFRESH_SECRET || 'refreshsupersecretfallback';
 
-export const generateTokens = (userId: number, role: string) => {
+export const generateTokens = (
+  id: number,
+  role: string,
+  email?: string,
+  name?: string,
+  branchId?: number | null
+) => {
+  const jwtSecret = process.env.JWT_SECRET || 'smartpay_sme_secret_jwt_key_2026';
+  const refreshSecret = process.env.REFRESH_SECRET || 'refreshsupersecretfallback';
+
   const accessToken = jwt.sign(
-    { userId, role },
-    JWT_SECRET,
+    { id, role, email, name, branchId },
+    jwtSecret,
     { expiresIn: '15m' }
   );
 
   const refreshToken = jwt.sign(
-    { userId, role },
-    REFRESH_SECRET,
+    { id, role, email, name, branchId },
+    refreshSecret,
     { expiresIn: '7d' }
   );
 
@@ -20,7 +27,9 @@ export const generateTokens = (userId: number, role: string) => {
 };
 
 export const verifyToken = (token: string, isRefresh = false) => {
-  const secret = isRefresh ? REFRESH_SECRET : JWT_SECRET;
+  const secret = isRefresh
+    ? (process.env.REFRESH_SECRET || 'refreshsupersecretfallback')
+    : (process.env.JWT_SECRET || 'smartpay_sme_secret_jwt_key_2026');
   try {
     return jwt.verify(token, secret);
   } catch (error) {

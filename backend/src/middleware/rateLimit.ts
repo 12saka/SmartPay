@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 
 export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login requests per `window` (here, per 15 minutes)
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000, // Relaxed for development
   message: {
     error: 'Too many login attempts from this IP, please try again after 15 minutes',
   },
@@ -12,7 +12,7 @@ export const loginRateLimiter = rateLimit({
 
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window`
+  max: process.env.NODE_ENV === 'production' ? 100 : 10000, // Relaxed for development
   message: {
     error: 'Too many requests from this IP, please try again later',
   },

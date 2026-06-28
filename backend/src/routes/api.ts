@@ -5,7 +5,7 @@ import { requestAdvance, getAllAdvances, approveAdvance } from '../controllers/a
 import { generatePayrollDraft, getAllPayrollRuns, updatePayrollRun, updatePayrollPeriodStatus, executeBulkPayments } from '../controllers/payrollController';
 import { getAllBranches, createBranch } from '../controllers/branchController';
 import { getDashboardStats, getPayrollTrends, getDepartmentSummary } from '../controllers/reportController';
-import { getAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../controllers/notificationController';
+import { getAllNotifications, markNotificationAsRead, markAllNotificationsAsRead, createNotification } from '../controllers/notificationController';
 import { getAllAuditLogs, logSecurityEvent } from '../controllers/auditController';
 import { getWalletBalances, getWalletTransactions, fundWallet } from '../controllers/walletController';
 import { authenticateToken, requireRole } from '../middleware/auth';
@@ -51,6 +51,7 @@ router.get('/reports/departments', authenticateToken, getDepartmentSummary);
 
 // Notification routes
 router.get('/notifications', authenticateToken, getAllNotifications);
+router.post('/notifications', authenticateToken, requireRole(['OWNER', 'MANAGER', 'ACCOUNTANT', 'HR']), createNotification);
 router.put('/notifications/:id/read', authenticateToken, markNotificationAsRead);
 router.put('/notifications/read-all', authenticateToken, markAllNotificationsAsRead);
 
