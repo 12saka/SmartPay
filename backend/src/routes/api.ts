@@ -41,7 +41,7 @@ router.put('/payroll/period-status', authenticateToken, requireRole(['OWNER', 'M
 router.post('/payroll/pay-bulk', authenticateToken, requireRole(['OWNER', 'ACCOUNTANT']), executeBulkPayments);
 
 // Branch routes
-router.get('/branches', authenticateToken, getAllBranches);
+router.get('/branches', getAllBranches);
 router.post('/branches', authenticateToken, requireRole(['OWNER']), createBranch);
 
 // Report routes

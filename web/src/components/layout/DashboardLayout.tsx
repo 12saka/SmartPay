@@ -71,12 +71,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   if (!user) return null;
 
   return (
     <ToastProvider>
       <CelebrationProvider>
         <div className="flex h-screen overflow-hidden bg-slate-50">
+          {/* Mobile backdrop */}
+          {isSidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 lg:hidden transition-opacity"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+          )}
+
           <Sidebar 
             currentTab={currentTab} 
             setCurrentTab={setCurrentTab}
@@ -85,10 +95,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             selectedBranchId={selectedBranchId}
             setSelectedBranchId={handleSelectBranch}
             currentUser={userAny}
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
           />
           <div className="flex-1 flex flex-col min-w-0">
-            <Topbar onLogout={logout} user={user} setCurrentTab={setCurrentTab} />
-            <div className="flex-1 overflow-y-auto bg-slate-50 relative z-0 p-6 lg:p-8">
+            <Topbar 
+              onLogout={logout} 
+              user={user} 
+              setCurrentTab={setCurrentTab} 
+              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+            />
+            <div className="flex-1 overflow-y-auto bg-slate-50 relative z-0 p-4 lg:p-8">
               <div className="max-w-[1600px] mx-auto w-full animate-slide-up">
                 {children}
               </div>

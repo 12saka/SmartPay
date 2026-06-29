@@ -75,8 +75,10 @@ export default function RegisterPage() {
         console.warn('Could not fetch branches list.');
       }
     }
-    loadBranches();
-  }, []);
+    if (flow === 'REGISTER_EMPLOYEE') {
+      loadBranches();
+    }
+  }, [flow]);
 
   const calculatePasswordStrength = (pass: string) => {
     let strength = 0;

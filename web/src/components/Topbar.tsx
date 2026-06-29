@@ -6,9 +6,10 @@ interface TopbarProps {
   onLogout: () => void;
   user: any;
   setCurrentTab: (tab: string) => void;
+  onToggleSidebar: () => void;
 }
 
-export default function Topbar({ onLogout, user, setCurrentTab }: TopbarProps) {
+export default function Topbar({ onLogout, user, setCurrentTab, onToggleSidebar }: TopbarProps) {
   const userName = user?.name || 'Jane Doe';
   const userRole = user?.role || 'OWNER';
 
@@ -25,7 +26,7 @@ export default function Topbar({ onLogout, user, setCurrentTab }: TopbarProps) {
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 select-none relative z-30">
       {/* Search Bar section */}
       <div className="flex items-center space-x-4 flex-1 max-w-lg">
-        <button className="text-slate-500 hover:text-slate-800 lg:hidden">
+        <button onClick={onToggleSidebar} className="text-slate-500 hover:text-slate-800 lg:hidden cursor-pointer p-1">
           <Menu className="w-5 h-5" />
         </button>
         <div className="relative w-full">

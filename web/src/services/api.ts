@@ -31,7 +31,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       (response.status === 401 || response.status === 403) &&
       (errorData.error === 'Invalid or expired token' || errorData.error === 'Access token required')
     ) {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/register') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         window.location.href = '/';

@@ -25,6 +25,8 @@ interface SidebarProps {
   selectedBranchId: number | null;
   setSelectedBranchId: (id: number | null) => void;
   currentUser?: any;
+  isSidebarOpen?: boolean;
+  setIsSidebarOpen?: (open: boolean) => void;
 }
 
 export default function Sidebar({
@@ -34,7 +36,9 @@ export default function Sidebar({
   branches,
   selectedBranchId,
   setSelectedBranchId,
-  currentUser
+  currentUser,
+  isSidebarOpen = false,
+  setIsSidebarOpen
 }: SidebarProps) {
   
   const role = currentUser?.role || 'OWNER';
@@ -105,7 +109,7 @@ export default function Sidebar({
   const navItems = allNavItems.filter(item => item.roles.includes(role));
 
   return (
-    <aside className="w-64 bg-sidebar-bg text-slate-400 flex flex-col h-screen select-none shrink-0 shadow-xl border-r border-white/5">
+    <aside className={`w-64 bg-sidebar-bg text-slate-400 flex flex-col h-screen select-none shrink-0 shadow-xl border-r border-white/5 fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Brand Logo */}
       <div className="p-6 flex items-center space-x-3 border-b border-white/10">
         <div className="bg-[var(--brand-green)] p-1.5 rounded-lg flex items-center justify-center text-white shadow-md shadow-emerald-900/20">
@@ -126,10 +130,13 @@ export default function Sidebar({
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentTab(item.id)}
+              onClick={() => {
+                setCurrentTab(item.id);
+                if (setIsSidebarOpen) setIsSidebarOpen(false);
+              }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 group btn-hover-scale ${
                 isActive 
-                  ? 'bg-[var(--brand-green)] text-white shadow-md shadow-emerald-950/20' 
+                  ? 'bg-[var(--brand-green)] text-white shadow-md shadow-emerald-955/20' 
                   : 'hover:bg-white/10 hover:text-white'
               }`}
             >

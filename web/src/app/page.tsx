@@ -144,8 +144,23 @@ export default function LoginPage() {
 
           <div className={styles.createAccountContainer}>
             <Button variant="secondary" fullWidth onClick={() => router.push('/register')}>
-              Create Account
+              Register a Company
             </Button>
+          </div>
+
+          {/* Download App Banner */}
+          <div className="mt-6 p-4 border border-slate-100 bg-slate-50/60 rounded-xl flex items-center justify-between text-left animate-slide-up">
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-slate-800 block">SmartPay Mobile App</span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Access payslips & request advances on the go</span>
+            </div>
+            <a 
+              href="/app-release.apk" 
+              download
+              className="px-3 py-2 bg-slate-900 hover:bg-slate-855 text-white rounded-lg text-[10px] font-bold transition-all flex items-center space-x-1 shrink-0 cursor-pointer shadow-sm hover:scale-[1.02]"
+            >
+              <span>Download Client</span>
+            </a>
           </div>
         </div>
       </div>
