@@ -14,6 +14,14 @@ export async function getAllNotifications(req: AuthenticatedRequest, res: Respon
       whereClause.status = status as string;
     }
 
+    // Filter notifications for employees to only show their own direct messages or global ones
+    if (req.user && req.user.role === 'EMPLOYEE') {
+      whereClause.OR = [
+        { userId: req.user.id },
+        { userId: null }
+      ];
+    }
+
     const notifications = await prisma.notification.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' }
@@ -49,6 +57,31 @@ export async function markAllNotificationsAsRead(req: AuthenticatedRequest, res:
     return res.json({ success: true, count: updated.count });
   } catch (error: any) {
     console.error('Mark all notifications read error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function createNotification(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { userId, title, message, category } = req.body;
+
+    if (!title || !message || !category) {
+      return res.status(400).json({ error: 'Title, message, and category are required' });
+    }
+
+    const newNotification = await prisma.notification.create({
+      data: {
+        userId: userId ? parseInt(userId) : null,
+        title,
+        message,
+        category: category.toUpperCase(),
+        status: 'UNREAD'
+      }
+    });
+
+    return res.status(201).json(newNotification);
+  } catch (error: any) {
+    console.error('Create notification error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

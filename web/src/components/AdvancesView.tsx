@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   HandCoins, 
   CheckCircle, 
@@ -8,16 +9,24 @@ import {
   Users
 } from 'lucide-react';
 import { advanceService, employeeService } from '../services/api';
+import { useCelebration } from '@/components/providers/CelebrationProvider';
 
 interface AdvancesViewProps {
   selectedBranchId: number | null;
+  currentUser?: any;
 }
 
-export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
+export default function AdvancesView({ selectedBranchId, currentUser }: AdvancesViewProps) {
+  const searchParams = useSearchParams();
+  const action = searchParams.get('action');
+
+  const { celebrate } = useCelebration();
   const [advances, setAdvances] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  const isEmployee = currentUser?.role === 'EMPLOYEE';
+
   // Request Form state
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,12 +48,18 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
         advanceService.getAll(),
         employeeService.getAll({ branchId: selectedBranchId || undefined })
       ]);
-      // Filter advances locally by branch if selected
-      const filteredAdv = selectedBranchId 
-        ? advList.filter(a => a.employee.branchId === selectedBranchId)
-        : advList;
-      setAdvances(filteredAdv);
       setEmployees(empList);
+
+      const matchedEmp = empList.find(e => e.email.toLowerCase() === currentUser?.email?.toLowerCase());
+
+      // Filter advances locally
+      const filteredAdv = isEmployee
+        ? advList.filter(a => a.employeeId === matchedEmp?.id)
+        : (selectedBranchId 
+            ? advList.filter(a => a.employee.branchId === selectedBranchId)
+            : advList);
+
+      setAdvances(filteredAdv);
     } catch (error) {
       console.error('Failed to load advances data:', error);
     } finally {
@@ -58,14 +73,21 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
   };
 
   const handleOpenRequest = () => {
+    const matched = employees.find(e => e.email.toLowerCase() === currentUser?.email?.toLowerCase()) || employees[0];
     setFormData({
-      employeeId: employees.length > 0 ? employees[0].id.toString() : '',
+      employeeId: matched ? matched.id.toString() : '',
       amount: '',
       repaymentPeriod: '1'
     });
     setErrorMsg('');
     setIsRequestOpen(true);
   };
+
+  useEffect(() => {
+    if (action === 'new' && employees.length > 0) {
+      handleOpenRequest();
+    }
+  }, [action, employees]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +103,7 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
         repaymentPeriod: parseInt(formData.repaymentPeriod)
       });
       setIsRequestOpen(false);
+      celebrate();
       loadData();
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to submit loan request');
@@ -102,15 +125,21 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 leading-tight">Salary Advances</h1>
-          <p className="text-sm text-slate-500">Approve loan requests and track employee repayment balances</p>
+          <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+            {isEmployee ? 'My Salary Advances' : 'Salary Advances'}
+          </h1>
+          <p className="text-sm text-slate-500">
+            {isEmployee 
+              ? 'Request an advance and view your active repayment schedules' 
+              : 'Approve loan requests and track employee repayment balances'}
+          </p>
         </div>
         <button
           onClick={handleOpenRequest}
           className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-lg text-sm shadow-sm transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Apply for Advance</span>
+          <span>{isEmployee ? 'Request Advance' : 'Apply for Advance'}</span>
         </button>
       </div>
 
@@ -128,19 +157,19 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
             <div className="p-12 text-center text-slate-500">Loading requests...</div>
           ) : advances.length === 0 ? (
             <div className="p-12 text-center text-slate-500">
-              No salary advance applications found.
+              {isEmployee ? 'You have no active salary advance applications.' : 'No salary advance applications found.'}
             </div>
           ) : (
             <table className="w-full border-collapse text-left text-sm text-slate-500">
               <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
                 <tr>
-                  <th className="px-6 py-4">Employee</th>
+                  {!isEmployee && <th className="px-6 py-4">Employee</th>}
                   <th className="px-6 py-4">Request Date</th>
                   <th className="px-6 py-4">Requested Amount</th>
                   <th className="px-6 py-4">Repayment (Months)</th>
                   <th className="px-6 py-4">Deducted / Outstanding</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-center">Approval Actions</th>
+                  {!isEmployee && <th className="px-6 py-4 text-center">Approval Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -149,12 +178,14 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
                   return (
                     <tr key={adv.id} className="hover:bg-slate-50/50 text-slate-700">
                       {/* Name */}
-                      <td className="px-6 py-4">
-                        <div>
-                          <span className="font-bold text-slate-900 block">{adv.employee.fullName}</span>
-                          <span className="text-xs text-slate-400 block mt-0.5">{adv.employee.employeeNumber}</span>
-                        </div>
-                      </td>
+                      {!isEmployee && (
+                        <td className="px-6 py-4">
+                          <div>
+                            <span className="font-bold text-slate-900 block">{adv.employee.fullName}</span>
+                            <span className="text-xs text-slate-400 block mt-0.5">{adv.employee.employeeNumber}</span>
+                          </div>
+                        </td>
+                      )}
 
                       {/* Request Date */}
                       <td className="px-6 py-4 font-mono text-xs text-slate-600">
@@ -195,28 +226,30 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
                       </td>
 
                       {/* Action buttons */}
-                      <td className="px-6 py-4 text-center">
-                        {adv.status === 'PENDING' ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <button
-                              onClick={() => handleApprove(adv.id, 'APPROVED')}
-                              className="p-1 hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 rounded transition-colors"
-                              title="Approve loan"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleApprove(adv.id, 'REJECTED')}
-                              className="p-1 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded transition-colors"
-                              title="Reject loan"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400 font-semibold uppercase">Closed</span>
-                        )}
-                      </td>
+                      {!isEmployee && (
+                        <td className="px-6 py-4 text-center">
+                          {adv.status === 'PENDING' ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <button
+                                onClick={() => handleApprove(adv.id, 'APPROVED')}
+                                className="p-1 hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 rounded transition-colors"
+                                title="Approve loan"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleApprove(adv.id, 'REJECTED')}
+                                className="p-1 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded transition-colors"
+                                title="Reject loan"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 font-semibold uppercase">Closed</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -239,21 +272,33 @@ export default function AdvancesView({ selectedBranchId }: AdvancesViewProps) {
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Employee */}
-              <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Select Employee</label>
-                <select
-                  name="employeeId"
-                  required
-                  value={formData.employeeId}
-                  onChange={handleInputChange}
-                  className="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                >
-                  <option value="">-- Select employee --</option>
-                  {employees.map(e => (
-                    <option key={e.id} value={e.id}>{e.fullName} ({e.employeeNumber})</option>
-                  ))}
-                </select>
-              </div>
+              {isEmployee ? (
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 mb-3">
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Applicant Info</span>
+                  <span className="text-sm font-bold text-slate-800 mt-1 block">
+                    {employees.find(e => e.email.toLowerCase() === currentUser?.email?.toLowerCase())?.fullName || currentUser?.name} ({employees.find(e => e.email.toLowerCase() === currentUser?.email?.toLowerCase())?.employeeNumber || 'EMP001'})
+                  </span>
+                  <span className="text-xs text-slate-400 block mt-0.5">
+                    {employees.find(e => e.email.toLowerCase() === currentUser?.email?.toLowerCase())?.position || 'Cashier'} · {employees.find(e => e.email.toLowerCase() === currentUser?.email?.toLowerCase())?.department || 'Operations'}
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 block mb-1">Select Employee</label>
+                  <select
+                    name="employeeId"
+                    required
+                    value={formData.employeeId}
+                    onChange={handleInputChange}
+                    className="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    <option value="">-- Select employee --</option>
+                    {employees.map(e => (
+                      <option key={e.id} value={e.id}>{e.fullName} ({e.employeeNumber})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Amount */}
               <div>

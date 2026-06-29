@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
@@ -35,7 +35,7 @@ async function main() {
   });
 
   console.log('Seeding users...');
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const hashedPassword = await argon2.hash('password123');
 
   // Owner (Full Access)
   const owner = await prisma.user.create({
@@ -44,6 +44,7 @@ async function main() {
       password: hashedPassword,
       name: 'Jane Doe (CEO)',
       role: 'OWNER',
+      status: 'ACTIVE',
       twoFactorEnabled: true,
       lastLoginIp: '192.168.1.15',
       lastLoginDevice: 'MacBook Pro'
@@ -57,6 +58,7 @@ async function main() {
       password: hashedPassword,
       name: 'John Miller (Manager)',
       role: 'MANAGER',
+      status: 'ACTIVE',
       branchId: branchA.id,
       twoFactorEnabled: false,
       lastLoginIp: '192.168.10.42',
@@ -71,6 +73,7 @@ async function main() {
       password: hashedPassword,
       name: 'Alice Wambui (Accountant)',
       role: 'ACCOUNTANT',
+      status: 'ACTIVE',
       twoFactorEnabled: false,
       lastLoginIp: '192.168.5.110',
       lastLoginDevice: 'Dell Latitude Laptop'
@@ -176,6 +179,19 @@ async function main() {
         bankAccount: emp.payMethod === 'BANK' ? emp.acc : `ACC-${5544320 + i}`,
         mpesaNumber: emp.payMethod === 'MPESA' ? emp.acc : `07${Math.floor(10000000 + Math.random() * 90000000)}`,
         emergencyContacts: 'Parent: Jane Mwangi - 0711111222'
+      }
+    });
+
+    // Create corresponding User account so they can log in
+    await prisma.user.create({
+      data: {
+        email: email,
+        password: hashedPassword,
+        name: emp.fullName,
+        role: 'EMPLOYEE',
+        status: 'ACTIVE',
+        branchId: emp.branchId,
+        twoFactorEnabled: false
       }
     });
 

@@ -11,9 +11,12 @@ const notificationController_1 = require("../controllers/notificationController"
 const auditController_1 = require("../controllers/auditController");
 const walletController_1 = require("../controllers/walletController");
 const auth_1 = require("../middleware/auth");
+const rateLimit_1 = require("../middleware/rateLimit");
 const router = (0, express_1.Router)();
+// Apply general API rate limiter
+router.use(rateLimit_1.apiRateLimiter);
 // Auth routes
-router.post('/auth/login', authController_1.login);
+router.post('/auth/login', rateLimit_1.loginRateLimiter, authController_1.login);
 router.post('/auth/register', authController_1.register);
 router.get('/auth/me', auth_1.authenticateToken, authController_1.getMe);
 // Employee routes
@@ -41,6 +44,7 @@ router.get('/reports/trends', auth_1.authenticateToken, reportController_1.getPa
 router.get('/reports/departments', auth_1.authenticateToken, reportController_1.getDepartmentSummary);
 // Notification routes
 router.get('/notifications', auth_1.authenticateToken, notificationController_1.getAllNotifications);
+router.post('/notifications', auth_1.authenticateToken, (0, auth_1.requireRole)(['OWNER', 'MANAGER', 'ACCOUNTANT', 'HR']), notificationController_1.createNotification);
 router.put('/notifications/:id/read', auth_1.authenticateToken, notificationController_1.markNotificationAsRead);
 router.put('/notifications/read-all', auth_1.authenticateToken, notificationController_1.markAllNotificationsAsRead);
 // Wallet routes

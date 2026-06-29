@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -7,29 +7,84 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Organization {
+  id                Int       @id @default(autoincrement())
+  name              String
+  registrationNumber String?
+  industry          String?
+  size              String?
+  country           String?
+  region            String?
+  address           String?
+  email             String?
+  phone             String?
+  logoUrl           String?
+  currency          String    @default("KES")
+  payrollFrequency  String    @default("MONTHLY")
+  paymentMethod     String    @default("BANK") // BANK, MPESA, BOTH
+  timezone          String    @default("Africa/Nairobi")
+  workingDays       String    @default("Monday-Friday")
+  branches          Branch[]
+  users             User[]
+  invitations       Invitation[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
 model User {
   id                Int      @id @default(autoincrement())
   email             String   @unique
   password          String
   name              String
-  role              String   // OWNER, MANAGER, HR, ACCOUNTANT, EMPLOYEE
+  role              String   // OWNER, MANAGER, HR, ACCOUNTANT, PAYROLL_OFFICER, EMPLOYEE
+  status            String   @default("PENDING_VERIFICATION") // PENDING_VERIFICATION, ACTIVE, LOCKED
+  failedLoginAttempts Int    @default(0)
+  lockoutUntil      DateTime?
+  organizationId    Int?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
   branchId          Int?
   branch            Branch?  @relation(fields: [branchId], references: [id])
   twoFactorEnabled  Boolean  @default(false)
   lastLoginIp       String?
   lastLoginDevice   String?
+  otps              OTP[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
 
+model OTP {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  code      String
+  type      String   // EMAIL_VERIFICATION, PASSWORD_RESET, 2FA
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Invitation {
+  id             Int          @id @default(autoincrement())
+  code           String       @unique
+  email          String
+  role           String
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  status         String       @default("PENDING") // PENDING, ACCEPTED, EXPIRED
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+}
+
 model Branch {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  location  String?
-  employees Employee[]
-  users     User[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id             Int          @id @default(autoincrement())
+  name           String
+  location       String?
+  organizationId Int?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  employees      Employee[]
+  users          User[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 model Employee {

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // Helper to get headers with JWT token
 function getHeaders() {
@@ -6,7 +6,7 @@ function getHeaders() {
     'Content-Type': 'application/json',
   };
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('smartpay_token');
+    const token = localStorage.getItem('accessToken');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -25,6 +25,19 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // Automatically log out and redirect if the session token is expired or invalid
+    if (
+      (response.status === 401 || response.status === 403) &&
+      (errorData.error === 'Invalid or expired token' || errorData.error === 'Access token required')
+    ) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      }
+    }
+    
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
 
@@ -38,8 +51,8 @@ export const authService = {
       body: JSON.stringify(credentials),
     });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('smartpay_token', data.token);
-      localStorage.setItem('smartpay_user', JSON.stringify(data.user));
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   },
@@ -49,21 +62,29 @@ export const authService = {
       body: JSON.stringify(userData),
     });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('smartpay_token', data.token);
-      localStorage.setItem('smartpay_user', JSON.stringify(data.user));
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   },
   logout: () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('smartpay_token');
-      localStorage.removeItem('smartpay_user');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
     }
   },
   getCurrentUser: () => {
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('smartpay_user');
-      return userStr ? JSON.parse(userStr) : null;
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          return JSON.parse(userStr);
+        } catch (e) {
+          console.error('Failed to parse user', e);
+          localStorage.removeItem('user');
+        }
+      }
+      return null;
     }
     return null;
   },
@@ -143,7 +164,7 @@ export const payrollService = {
       body: JSON.stringify(updateData),
     });
   },
-  updatePeriodStatus: async (month: string, action: 'HR_APPROVE' | 'FINANCE_APPROVE' | 'COMPANY_APPROVE' | 'RESET', branchId?: number) => {
+  updatePeriodStatus: async (month: string, action: 'SUBMIT' | 'HR_APPROVE' | 'FINANCE_APPROVE' | 'COMPANY_APPROVE' | 'RESET', branchId?: number) => {
     return request<any>('/payroll/period-status', {
       method: 'PUT',
       body: JSON.stringify({ month, action, branchId }),
@@ -217,6 +238,12 @@ export const notificationService = {
     const query = new URLSearchParams();
     if (params.category) query.append('category', params.category);
     return request<any[]>(`/notifications?${query.toString()}`);
+  },
+  create: async (notificationData: { userId?: number | null; title: string; message: string; category: string }) => {
+    return request<any>('/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notificationData),
+    });
   },
   markRead: async (id: number) => {
     return request<any>(`/notifications/${id}/read`, {

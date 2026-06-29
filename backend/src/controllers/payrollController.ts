@@ -215,7 +215,7 @@ export async function updatePayrollRun(req: AuthenticatedRequest, res: Response)
 // Multi-role approval workflow
 export async function updatePayrollPeriodStatus(req: AuthenticatedRequest, res: Response) {
   try {
-    const { month, branchId, action } = req.body; // Action: HR_APPROVE, FINANCE_APPROVE, COMPANY_APPROVE, RESET
+    const { month, branchId, action } = req.body; // Action: SUBMIT, FINANCE_APPROVE, COMPANY_APPROVE, RESET
     if (!month || !action) {
       return res.status(400).json({ error: 'Month and action are required' });
     }
@@ -229,12 +229,12 @@ export async function updatePayrollPeriodStatus(req: AuthenticatedRequest, res: 
     let nextStatus = 'DRAFT';
     let currentRequiredStatus = 'DRAFT';
 
-    if (action === 'HR_APPROVE') {
-      nextStatus = 'HR_APPROVED';
+    if (action === 'SUBMIT') {
+      nextStatus = 'SUBMITTED';
       currentRequiredStatus = 'DRAFT';
     } else if (action === 'FINANCE_APPROVE') {
       nextStatus = 'FINANCE_APPROVED';
-      currentRequiredStatus = 'HR_APPROVED';
+      currentRequiredStatus = 'SUBMITTED';
     } else if (action === 'COMPANY_APPROVE') {
       nextStatus = 'APPROVED';
       currentRequiredStatus = 'FINANCE_APPROVED';
@@ -245,14 +245,17 @@ export async function updatePayrollPeriodStatus(req: AuthenticatedRequest, res: 
     }
 
     // Guard role permissions
-    if (action === 'HR_APPROVE' && !['OWNER', 'MANAGER', 'HR'].includes(req.user?.role || '')) {
-      return res.status(403).json({ error: 'Access denied: HR Manager required' });
+    if (action === 'SUBMIT' && !['OWNER', 'MANAGER'].includes(req.user?.role || '')) {
+      return res.status(403).json({ error: 'Access denied: Owner or Manager required to submit draft' });
     }
-    if (action === 'FINANCE_APPROVE' && !['OWNER', 'ACCOUNTANT', 'MANAGER'].includes(req.user?.role || '')) {
-      return res.status(403).json({ error: 'Access denied: Finance Manager or Accountant required' });
+    if (action === 'FINANCE_APPROVE' && req.user?.role !== 'ACCOUNTANT') {
+      return res.status(403).json({ error: 'Access denied: Accountant required for finance approval' });
     }
     if (action === 'COMPANY_APPROVE' && !['OWNER', 'MANAGER'].includes(req.user?.role || '')) {
-      return res.status(403).json({ error: 'Access denied: Owner or Company Manager required' });
+      return res.status(403).json({ error: 'Access denied: Owner or Manager required for final sign-off' });
+    }
+    if (action === 'RESET' && !['OWNER', 'MANAGER', 'ACCOUNTANT'].includes(req.user?.role || '')) {
+      return res.status(403).json({ error: 'Access denied: Owner, Manager, or Accountant required to reset draft' });
     }
 
     if (action !== 'RESET') {

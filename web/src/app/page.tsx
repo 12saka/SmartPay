@@ -1,133 +1,154 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { authService, branchService } from '../services/api';
-import Sidebar from '../components/Sidebar';
-import Topbar from '../components/Topbar';
-import LoginView from '../components/LoginView';
-import DashboardView from '../components/DashboardView';
-import EmployeesView from '../components/EmployeesView';
-import PayrollView from '../components/PayrollView';
-import PaymentsView from '../components/PaymentsView';
-import PayslipsView from '../components/PayslipsView';
-import AttendanceView from '../components/AttendanceView';
-import AdvancesView from '../components/AdvancesView';
-import BranchesView from '../components/BranchesView';
-import WalletView from '../components/WalletView';
-import ReportsView from '../components/ReportsView';
-import ComplianceView from '../components/ComplianceView';
-import NotificationsView from '../components/NotificationsView';
-import AuditLogsView from '../components/AuditLogsView';
-import SettingsView from '../components/SettingsView';
-import ProfileView from '../components/ProfileView';
-import AiPanel from '../components/AiPanel';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Wallet, Briefcase, BarChart3 } from 'lucide-react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import styles from './Login.module.css';
 
-export default function HomePage() {
-  const [user, setUser] = useState<any | null>(null);
-  const [checkedAuth, setCheckedAuth] = useState(false);
-  const [currentTab, setCurrentTab] = useState('dashboard');
-  const [branches, setBranches] = useState<any[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Check if token exists in localStorage
-    const savedUser = authService.getCurrentUser();
-    if (savedUser) {
-      setUser(savedUser);
-      loadBranches();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
     }
-    setCheckedAuth(true);
-  }, []);
 
-  async function loadBranches() {
+    setIsLoading(true);
     try {
-      const data = await branchService.getAll();
-      setBranches(data);
-    } catch (error) {
-      console.error('Failed to load branches for dropdown:', error);
-    }
-  }
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBase}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-  const handleLoginSuccess = (loggedInUser: any) => {
-    setUser(loggedInUser);
-    loadBranches();
-  };
+      const data = await response.json();
 
-  const handleLogout = () => {
-    authService.logout();
-    setUser(null);
-  };
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to login');
+      }
 
-  if (!checkedAuth) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-500 font-bold">
-        Initializing SmartPay Workspace...
-      </div>
-    );
-  }
+      // Store in auth provider state and local storage
+      if (data.user && data.user.status === 'SUSPENDED') {
+        throw new Error('This account has been suspended. Access is restricted.');
+      }
+      login(data.accessToken, data.user);
 
-  if (!user) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  // Render correct content view based on active tab
-  const renderContent = () => {
-    switch (currentTab) {
-      case 'dashboard':
-        return <DashboardView setCurrentTab={setCurrentTab} selectedBranchId={selectedBranchId} />;
-      case 'employees':
-        return <EmployeesView selectedBranchId={selectedBranchId} />;
-      case 'payroll-processing':
-        return <PayrollView selectedBranchId={selectedBranchId} currentUser={user} />;
-      case 'bulk-payments':
-        return <PaymentsView selectedBranchId={selectedBranchId} />;
-      case 'approvals':
-        return <AdvancesView selectedBranchId={selectedBranchId} />;
-      case 'branches':
-        return <BranchesView />;
-      case 'attendance':
-        return <AttendanceView />;
-      case 'advances':
-        return <AdvancesView selectedBranchId={selectedBranchId} />;
-      case 'wallet':
-        return <WalletView />;
-      case 'reports':
-        return <ReportsView />;
-      case 'compliance':
-        return <ComplianceView />;
-      case 'notifications':
-        return <NotificationsView />;
-      case 'audit-logs':
-        return <AuditLogsView />;
-      case 'settings':
-        return <SettingsView />;
-      case 'profile':
-        return <ProfileView />;
-      default:
-        return <DashboardView setCurrentTab={setCurrentTab} selectedBranchId={selectedBranchId} />;
+      // Route based on role
+      router.push('/dashboard');
+      
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* Sidebar Navigation */}
-      <Sidebar 
-        currentTab={currentTab} 
-        setCurrentTab={setCurrentTab}
-        branchName={user.branch ? user.branch.name : 'SuperMart HQ'}
-        branches={branches}
-        selectedBranchId={selectedBranchId}
-        setSelectedBranchId={setSelectedBranchId}
-      />
+    <div className={styles.container}>
+      {/* Left Side - Illustration */}
+      <div className={styles.leftSide}>
+        <div className={`${styles.floatingCard} ${styles.card1}`}>
+          <Wallet size={24} color="#10B981" />
+          <div>
+            <div style={{ fontWeight: 600 }}>Payroll Processed</div>
+            <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>Just now</div>
+          </div>
+        </div>
+        
+        <div className={`${styles.floatingCard} ${styles.card2}`}>
+          <Briefcase size={24} color="#3b82f6" />
+          <div>
+            <div style={{ fontWeight: 600 }}>New Employee</div>
+            <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>Onboarding completed</div>
+          </div>
+        </div>
 
-      {/* Main Dashboard Space */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Topbar onLogout={handleLogout} user={user} setCurrentTab={setCurrentTab} />
-        {renderContent()}
+        <div className={`${styles.floatingCard} ${styles.card3}`}>
+          <BarChart3 size={24} color="#f59e0b" />
+          <div>
+            <div style={{ fontWeight: 600 }}>Analytics Updated</div>
+            <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>Monthly reports ready</div>
+          </div>
+        </div>
+
+        <h1 className={styles.illustrationTitle}>Welcome to SmartPay</h1>
+        <p className={styles.illustrationText}>
+          The enterprise-grade solution for seamless payroll management, employee onboarding, and financial analytics.
+        </p>
       </div>
 
-      {/* Floating AI Assistant Drawer */}
-      <AiPanel />
+      {/* Right Side - Login Form */}
+      <div className={styles.rightSide}>
+        <div className={styles.formContainer}>
+          <h2 className={styles.title}>Welcome Back</h2>
+          <p className={styles.subtitle}>Sign in to access your payroll workspace.</p>
+
+          {error && <div className={styles.globalError}>{error}</div>}
+
+          <form className={styles.form} onSubmit={handleLogin}>
+            <Input
+              label="Company Email"
+              type="email"
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            
+            <Input
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <div className={styles.options}>
+              <label className={styles.checkboxContainer}>
+                <input type="checkbox" /> Remember Me
+              </label>
+              <a href="#" className={styles.forgotPassword}>Forgot Password?</a>
+            </div>
+
+            <Button type="submit" fullWidth disabled={isLoading}>
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </form>
+
+          <div className={styles.divider}>Or continue with</div>
+
+          <div className={styles.socialButtons}>
+            <button className={styles.socialBtn} type="button">
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={20} height={20} />
+              Google
+            </button>
+            <button className={styles.socialBtn} type="button">
+              <img src="https://www.svgrepo.com/show/475661/microsoft-color.svg" alt="Microsoft" width={20} height={20} />
+              Microsoft
+            </button>
+          </div>
+
+          <div className={styles.createAccountContainer}>
+            <Button variant="secondary" fullWidth onClick={() => router.push('/register')}>
+              Create Account
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

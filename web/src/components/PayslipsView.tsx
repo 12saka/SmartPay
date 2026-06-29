@@ -15,15 +15,18 @@ let html2canvas: any;
 
 interface PayslipsViewProps {
   selectedBranchId: number | null;
+  currentUser?: any;
 }
 
-export default function PayslipsView({ selectedBranchId }: PayslipsViewProps) {
+export default function PayslipsView({ selectedBranchId, currentUser }: PayslipsViewProps) {
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
   const [month, setMonth] = useState('2026-06');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sentMap, setSentMap] = useState<Record<number, boolean>>({});
+
+  const isEmployee = currentUser?.role === 'EMPLOYEE';
 
   useEffect(() => {
     loadPaidPayroll();
@@ -186,18 +189,27 @@ export default function PayslipsView({ selectedBranchId }: PayslipsViewProps) {
     doc.save(`payslip-${run.employee.employeeNumber}-${month}.pdf`);
   };
 
-  const filtered = payrollRuns.filter(run => 
-    run.employee.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    run.employee.employeeNumber.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = payrollRuns.filter(run => {
+    if (isEmployee) {
+      return run.employee.email.toLowerCase() === currentUser?.email?.toLowerCase();
+    }
+    return run.employee.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      run.employee.employeeNumber.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 animate-fade-in">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 leading-tight">Employee Payslips</h1>
-          <p className="text-sm text-slate-500">View generated payslips, download PDF templates, or send email notices</p>
+          <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+            {isEmployee ? 'My Payslips' : 'Employee Payslips'}
+          </h1>
+          <p className="text-sm text-slate-500">
+            {isEmployee 
+              ? 'View and download your official monthly payslips' 
+              : 'View generated payslips, download PDF templates, or send email notices'}
+          </p>
         </div>
         <div className="flex items-center space-x-3">
           <input
@@ -211,21 +223,23 @@ export default function PayslipsView({ selectedBranchId }: PayslipsViewProps) {
 
       {/* Directory search header */}
       <div className="bg-white border border-slate-200/80 rounded-xl shadow-card overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="relative w-full max-w-sm">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search className="w-4 h-4" />
-            </span>
-            <input
-              type="text"
-              placeholder="Search employee or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full text-sm pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-            />
+        {!isEmployee && (
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="relative w-full max-w-sm">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Search className="w-4 h-4" />
+              </span>
+              <input
+                type="text"
+                placeholder="Search employee or ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full text-sm pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+            <span className="text-xs text-slate-400 font-medium">{filtered.length} payslips available</span>
           </div>
-          <span className="text-xs text-slate-400 font-medium">{filtered.length} payslips available</span>
-        </div>
+        )}
 
         {/* Payslips List Grid */}
         {loading ? (
@@ -307,35 +321,37 @@ export default function PayslipsView({ selectedBranchId }: PayslipsViewProps) {
                   </button>
 
                   {/* Send email notifications */}
-                  <button
-                    onClick={() => handleSendNotification(run.id)}
-                    disabled={sendingId === run.id}
-                    className={`flex-1 flex items-center justify-center space-x-2 font-bold py-2 rounded-lg text-xs transition-all shadow-sm ${
-                      sentMap[run.id]
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    {sendingId === run.id ? (
-                      <>
-                        <svg className="animate-spin w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Delivering...</span>
-                      </>
-                    ) : sentMap[run.id] ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Sent via Email</span>
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-3.5 h-3.5" />
-                        <span>Email Payslip</span>
-                      </>
-                    )}
-                  </button>
+                  {!isEmployee && (
+                    <button
+                      onClick={() => handleSendNotification(run.id)}
+                      disabled={sendingId === run.id}
+                      className={`flex-1 flex items-center justify-center space-x-2 font-bold py-2 rounded-lg text-xs transition-all shadow-sm ${
+                        sentMap[run.id]
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      {sendingId === run.id ? (
+                        <>
+                          <svg className="animate-spin w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Delivering...</span>
+                        </>
+                      ) : sentMap[run.id] ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Sent via Email</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Email Payslip</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -40,6 +40,11 @@ export default function Topbar({ onLogout, user, setCurrentTab }: TopbarProps) {
         </div>
       </div>
 
+      {/* Greeting next to search */}
+      <div className="hidden md:flex items-center text-sm font-semibold text-slate-700 ml-4 shrink-0">
+        Welcome back, {userName.split(' ')[0]} 👋
+      </div>
+
       {/* Notifications & Profile info */}
       <div className="flex items-center space-x-6">
         {/* Notification bell and dropdown */}
@@ -56,25 +61,31 @@ export default function Topbar({ onLogout, user, setCurrentTab }: TopbarProps) {
           </button>
 
           {showNotificationsMenu && (
-            <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between font-bold text-slate-800 text-xs">
-                <span>Recent Notifications</span>
-                <button 
-                  onClick={() => { setCurrentTab('notifications'); setShowNotificationsMenu(false); }} 
-                  className="text-emerald-600 hover:underline"
-                >
-                  View All
-                </button>
+            <>
+              <div 
+                className="fixed inset-0 z-40 bg-transparent cursor-default" 
+                onClick={() => setShowNotificationsMenu(false)}
+              />
+              <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between font-bold text-slate-800 text-xs">
+                  <span>Recent Notifications</span>
+                  <button 
+                    onClick={() => { setCurrentTab('notifications'); setShowNotificationsMenu(false); }} 
+                    className="text-emerald-600 hover:underline"
+                  >
+                    View All
+                  </button>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {mockQuickNotifications.map((n) => (
+                    <div key={n.id} className="p-3 hover:bg-slate-50/50 cursor-pointer">
+                      <span className="text-xs font-bold text-slate-800 block">{n.title}</span>
+                      <span className="text-[10px] text-slate-400 block mt-1">{n.time}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="divide-y divide-slate-100">
-                {mockQuickNotifications.map((n) => (
-                  <div key={n.id} className="p-3 hover:bg-slate-50/50 cursor-pointer">
-                    <span className="text-xs font-bold text-slate-800 block">{n.title}</span>
-                    <span className="text-[10px] text-slate-400 block mt-1">{n.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -93,61 +104,71 @@ export default function Topbar({ onLogout, user, setCurrentTab }: TopbarProps) {
             </div>
             
             <div className="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center font-bold text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-all overflow-hidden">
-              {userName.substring(0, 2).toUpperCase()}
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt={userName} className="w-full h-full object-cover" />
+              ) : (
+                userName.substring(0, 2).toUpperCase()
+              )}
             </div>
           </div>
 
           {showProfileMenu && (
-            <div className="absolute right-0 top-11 w-60 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
-              <div className="p-4 bg-slate-50 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-800 block leading-tight">{userName}</span>
-                <span className="text-[10px] text-slate-400 block mt-1 uppercase tracking-wider">{userRole}</span>
-              </div>
-              <div className="py-1">
-                <button
-                  onClick={() => {
-                    setCurrentTab('profile');
-                    setShowProfileMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
-                >
-                  <User className="w-4 h-4 text-slate-400" />
-                  <span>My Profile</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentTab('settings');
-                    setShowProfileMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
-                >
-                  <Settings className="w-4 h-4 text-slate-400" />
-                  <span>Company Settings</span>
-                </button>
-              </div>
-              <div className="border-t border-slate-100 px-4 py-2.5 space-y-1 bg-slate-50/50 text-[10px] font-semibold text-slate-500">
-                <div className="flex items-center space-x-1.5">
-                  <Wallet className="w-3.5 h-3.5 text-slate-400" />
-                  <span>M-Pesa: 0711***344</span>
+            <>
+              <div 
+                className="fixed inset-0 z-40 bg-transparent cursor-default" 
+                onClick={() => setShowProfileMenu(false)}
+              />
+              <div className="absolute right-0 top-11 w-60 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                <div className="p-4 bg-slate-50 border-b border-slate-100">
+                  <span className="text-xs font-bold text-slate-800 block leading-tight">{userName}</span>
+                  <span className="text-[10px] text-slate-400 block mt-1 uppercase tracking-wider">{userRole}</span>
                 </div>
-                <div className="flex items-center space-x-1.5">
-                  <Key className="w-3.5 h-3.5 text-slate-400" />
-                  <span>2FA Enforced</span>
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setCurrentTab('profile');
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                  >
+                    <User className="w-4 h-4 text-slate-400" />
+                    <span>My Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentTab('settings');
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                  >
+                    <Settings className="w-4 h-4 text-slate-400" />
+                    <span>Company Settings</span>
+                  </button>
+                </div>
+                <div className="border-t border-slate-100 px-4 py-2.5 space-y-1 bg-slate-50/50 text-[10px] font-semibold text-slate-500">
+                  <div className="flex items-center space-x-1.5">
+                    <Wallet className="w-3.5 h-3.5 text-slate-400" />
+                    <span>M-Pesa: 0711***344</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <Key className="w-3.5 h-3.5 text-slate-400" />
+                    <span>2FA Enforced</span>
+                  </div>
+                </div>
+                <div className="border-t border-slate-100 py-1">
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center space-x-2"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-400" />
+                    <span>Logout</span>
+                  </button>
                 </div>
               </div>
-              <div className="border-t border-slate-100 py-1">
-                <button
-                  onClick={() => {
-                    onLogout();
-                    setShowProfileMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center space-x-2"
-                >
-                  <LogOut className="w-4 h-4 text-rose-400" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
+            </>
           )}
         </div>
       </div>
