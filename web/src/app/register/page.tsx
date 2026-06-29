@@ -49,8 +49,9 @@ export default function RegisterPage() {
         payload.workingDays = 'Monday-Friday';
       }
  
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       // Register the user & organization
-      const regResponse = await fetch('http://localhost:5000/api/auth/register', {
+      const regResponse = await fetch(`${apiBase}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -62,7 +63,7 @@ export default function RegisterPage() {
       }
  
       // Automatically log in the user
-      const logResponse = await fetch('http://localhost:5000/api/auth/login', {
+      const logResponse = await fetch(`${apiBase}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
