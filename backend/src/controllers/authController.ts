@@ -161,6 +161,28 @@ export async function register(req: AuthenticatedRequest, res: Response) {
       }
     });
 
+    if (role.toUpperCase() === 'EMPLOYEE') {
+      const employeeNumber = 'EMP' + Math.floor(1000 + Math.random() * 9000);
+      await prisma.employee.create({
+        data: {
+          employeeNumber,
+          fullName: name,
+          nationalId: req.body.nationalId || 'ID-' + Math.floor(Math.random() * 1000000),
+          phone: req.body.phone || '',
+          email: email.toLowerCase(),
+          department: req.body.department || 'Operations',
+          position: req.body.position || 'Associate',
+          salary: req.body.salary ? parseFloat(req.body.salary) : 25000,
+          employmentDate: new Date().toISOString().split('T')[0],
+          paymentMethod: (req.body.paymentMethod || 'BANK').toUpperCase(),
+          accountNumber: req.body.accountNumber || '',
+          taxPin: req.body.taxPin || 'A00' + Math.floor(100000 + Math.random() * 900000) + 'Z',
+          branchId: branchId ? parseInt(branchId) : null,
+          status: 'ACTIVE'
+        }
+      });
+    }
+
     return res.status(201).json({
       message: 'Account created successfully.',
       user: {

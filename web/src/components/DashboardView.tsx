@@ -51,17 +51,17 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
   const name = user?.name || 'User';
 
   const [stats, setStats] = useState<any>({
-    totalEmployees: 156,
-    totalPayrollAmount: 2450000,
-    paidEmployees: 120,
-    pendingEmployees: 36,
-    pendingAmount: 540000,
-    totalBranches: 4,
+    totalEmployees: 0,
+    totalPayrollAmount: 0,
+    paidEmployees: 0,
+    pendingEmployees: 0,
+    pendingAmount: 0,
+    totalBranches: 0,
     recentTransactions: []
   });
   
-  const [trends, setTrends] = useState<any[]>(mockTrendsData);
-  const [deptData, setDeptData] = useState<any[]>(mockDeptData);
+  const [trends, setTrends] = useState<any[]>([]);
+  const [deptData, setDeptData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Employee-specific state
@@ -216,16 +216,18 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
           reportService.getDepartments({ branchId: selectedBranchId || undefined })
         ]);
         
-        if (statsData.totalEmployees > 0) {
-          setStats(statsData);
-        }
+        setStats(statsData);
+        
         if (trendsData && trendsData.length > 0) {
           const formatted = trendsData.map(t => ({
             ...t,
-            month: t.month.split('-')[1] === '05' ? 'May' : t.month
+            month: t.month.includes('-') ? t.month.split('-')[1] : t.month
           }));
           setTrends(formatted);
+        } else {
+          setTrends([]);
         }
+
         if (deptsData && deptsData.departments && deptsData.departments.length > 0) {
           const colors = ['#2563eb', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6'];
           const formatted = deptsData.departments.map((d: any, i: number) => ({
@@ -235,6 +237,8 @@ export default function DashboardView({ setCurrentTab, selectedBranchId }: Dashb
             color: colors[i % colors.length]
           }));
           setDeptData(formatted);
+        } else {
+          setDeptData([]);
         }
       } catch (err) {
         console.warn('Could not load real stats, using seed/mock mockups.', err);
